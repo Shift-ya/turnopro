@@ -618,6 +618,3 @@ Para pasar de demo a producto integrable:
 
 ---
 
-Si queres, en el siguiente paso te dejo tambien un `docker-compose.yml`
-para levantar PostgreSQL + backend + frontend con un solo comando.
-
