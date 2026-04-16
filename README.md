@@ -8,13 +8,39 @@ Este repositorio integra:
 - **Backend**: Spring Boot 3.2.3 + Java 21 + PostgreSQL
 - **Arquitectura**: Multi-tenant con autenticación JWT y roles (SUPER_ADMIN, TENANT_ADMIN, PROFESSIONAL, USER)
 
+---
+
+## 🚀 Quick Start (5 minutos)
+
+Si solo quieres levantar el proyecto rápidamente:
+
+```powershell
+# Terminal 1: Backend
+cd C:\Users\(usuario)\Documents\turnopro\backend
+mvn clean package -q  # Primera vez
+java -jar target/turnopro-backend-1.0.0-SNAPSHOT.jar
+# ✅ Backend en: http://localhost:8080/api
+
+# Terminal 2: Frontend
+cd C:\Users\(usuario)\Documents\turnopro
+npm install  # Primera vez
+npm run dev
+# ✅ Frontend en: http://localhost:5173
+```
+
+**Requisito:** PostgreSQL 17 corriendo en `localhost:5432` con:
+- Usuario: `postgres`
+- Contraseña: `(tu pass de postgres)`
+
+---
+
 ## 1. Estado Actual del Proyecto
 
 ✅ **Estado en Producción Local:**
 
 - ✅ Frontend corriendo en http://localhost:5173 (Vite dev server con HMR)
 - ✅ Backend corriendo en http://localhost:8080/api (Spring Boot + JWT)
-- ✅ PostgreSQL funcional en Docker (puerto 5432)
+- ✅ PostgreSQL funcional (instalado localmente en puerto 5432)
 - ✅ Autenticación JWT implementada
 - ✅ Controladores REST funcionales:
   - `AuthController` - Login, logout, autenticación
@@ -23,8 +49,9 @@ Este repositorio integra:
   - `TenantAdminController` - Administración de tenant
 - ✅ Entidades de dominio completas (User, Tenant, Professional, Service, Appointment, etc.)
 - ✅ Servicios de negocio implementados
+- ✅ Base de datos `turnopro` automáticamente creada en el primer inicio
 
-**Integración Frontend-Backend:** Parcialmente integrada, con API client configurado en `src/lib/api.ts`
+**Integración Frontend-Backend:** Configurada en `src/lib/api.ts` (http://localhost:8080/api)
 
 ## 2. Stack tecnico
 
@@ -50,8 +77,8 @@ Este repositorio integra:
 
 ### Base de datos
 
-- PostgreSQL 16 (en Docker)
-- DB: `turnopro`
+- PostgreSQL 17 (instalado localmente)
+- DB: `turnopro` (auto-creada)
 
 ## 3. Estructura del repo
 
@@ -78,44 +105,59 @@ Este repositorio integra:
 
 - **Node.js** 20+ (verificar con `node -v`)
 - **npm** 10+ (verificar con `npm -v`)
-- **Java** 21 (verificar con `java -version`)
+- **Java** 21 LTS (verificar con `java -version`)
 - **Maven** 3.9+ (verificar con `mvn -version`)
-- **Docker Desktop** (para PostgreSQL)
+- **PostgreSQL** 17+ (instalado localmente en puerto 5432)
+  - Usuario: `postgres`
+  - Contraseña: `postgres` (ó tu pass de Postgres)
+  - Base de datos: `turnopro` (se crea automáticamente en el primer inicio)
 - **Git** (para control de versiones)
 
 ## 5. Levantando el Proyecto Completo
 
 ### Ubicación del Proyecto
 ```
-C:\Users\Malu\Documents\saas-multi-tenant-arquitectura-back\saas-multi-tenant-arquitectura-back
+C:\Users\(usuario)\Documents\turnopro
 ```
 
-### Opción A: Levantamiento Automático (Recomendado)
+### ✅ Pasos Rápidos (Recomendado)
 
-#### 1️⃣ Base de Datos (PostgreSQL en Docker)
+#### 1️⃣ Verificar PostgreSQL
 
 ```powershell
-# Verificar que Docker Desktop está corriendo
-docker ps
-
-# Si el contenedor ya existe y está parado:
-docker start turnopro-postgres
-
-# Si es primera vez, crearlo:
-docker run -d `
-  --name turnopro-postgres `
-  -e POSTGRES_DB=turnopro `
-  -e POSTGRES_USER=postgres `
-  -e POSTGRES_PASSWORD=postgres `
-  -p 5432:5432 `
-  postgres:16-alpine
+# Asegúrate de que PostgreSQL 17 está corriendo
+# La BD "turnopro" se crea automáticamente en el primer inicio del backend
 ```
 
-#### 2️⃣ Frontend (Vite Dev Server)
+#### 2️⃣ Backend (Spring Boot) - Terminal 1
 
 ```powershell
-cd "C:\Users\Malu\Documents\saas-multi-tenant-arquitectura-back\saas-multi-tenant-arquitectura-back"
-npm install  # Solo primera vez
+cd C:\Users\(usuario)\Documents\turnopro\backend
+
+# Primera vez: compilar
+mvn clean package
+
+# Iniciar el servidor
+java -jar target/turnopro-backend-1.0.0-SNAPSHOT.jar
+```
+
+**Resultado esperado:**
+```
+Started TurnoproApplication in X.XXX seconds
+2026-04-16 09:25:00.000  INFO 1234 --- [main] com.turnopro.TurnoproApplication : Started
+```
+
+El backend estará disponible en: **http://localhost:8080/api**
+
+#### 3️⃣ Frontend (React + Vite) - Terminal 2
+
+```powershell
+cd C:\Users\(usuario)\Documents\turnopro
+
+# Primera vez: instalar dependencias
+npm install
+
+# Iniciar servidor de desarrollo
 npm run dev
 ```
 
@@ -126,41 +168,32 @@ npm run dev
   ➜  Network: use --host to expose
 ```
 
-#### 3️⃣ Backend (Spring Boot)
+El frontend estará disponible en: **http://localhost:5173**
 
-En **otra terminal**:
+---
 
-```powershell
-cd "C:\Users\Malu\Documents\saas-multi-tenant-arquitectura-back\saas-multi-tenant-arquitectura-back\backend"
-mvn clean install  # Primera vez para descargar dependencias
-mvn spring-boot:run
-```
+### ⚙️ Alternativa: Build de Producción
 
-**Resultado esperado:**
-```
-Started TurnoproApplication in X.XXX seconds
-```
-
-### Opción B: Con Build Previo
+Si prefieres ejecutar las versiones compiladas:
 
 ```powershell
-# Backend
-cd backend
-mvn clean package
+# Backend (ya compilado con mvn clean package)
+cd C:\Users\(usuario)\Documents\turnopro\backend
 java -jar target/turnopro-backend-1.0.0-SNAPSHOT.jar
 
-# Frontend (otra terminal)
-npm run build
-npm run preview
+# Frontend (en otra terminal)
+cd C:\Users\(usuario)\Documents\turnopro
+npm run build  # Genera dist/index.html
+npm run preview  # Sirve en http://localhost:4173
 ```
 
 ## 6. URLs de Acceso
 
 | Componente | URL | Puerto | Notas |
 |-----------|-----|--------|-------|
-| **Frontend** | http://localhost:5173 | 5173 | Vite con HMR activo |
+| **Frontend** | http://localhost:5173 | 5173 | Vite dev server con HMR activo |
 | **Backend API** | http://localhost:8080/api | 8080 | Context path: `/api` |
-| **PostgreSQL** | localhost:5432 | 5432 | User: `postgres`, Pass: `postgres` |
+| **PostgreSQL** | localhost:5432 | 5432 | User: `postgres`, Pass: `(tu pass de postgres)` |
 | **Health Check** | http://localhost:8080/api/actuator/health | - | Verificar backend activo |
 
 ## 7. Primeros Pasos en la App
@@ -257,41 +290,29 @@ npm run preview
 
 ### Variables de Entorno Backend
 
-Crear archivo `.env` en la raíz o definir en powershell:
+Crear archivo `.env` en la raíz de `backend/` o definir en powershell:
 
 ```powershell
 # Base de Datos
 $env:DATABASE_URL="jdbc:postgresql://localhost:5432/turnopro"
 $env:DATABASE_USER="postgres"
-$env:DATABASE_PASSWORD="postgres"
+$env:DATABASE_PASSWORD="(tu pass de postgres)"
 
-# JWT
+# JWT (generar con: openssl rand -base64 32)
 $env:JWT_SECRET="tu-secret-key-muy-segura"
 $env:JWT_EXPIRATION="86400000"  # 24 horas en ms
 
-# Email (opcional)
+# Email (opcional, para notificaciones)
 $env:MAIL_HOST="smtp.gmail.com"
 $env:MAIL_PORT="587"
 $env:MAIL_USERNAME="tu-email@gmail.com"
 $env:MAIL_PASSWORD="tu-app-password"
 
-# Hibernate
-$env:SPRING_JPA_HIBERNATE_DDL_AUTO="update"  # update | validate | create-drop
+# Hibernate (opciones: update | validate | create-drop)
+$env:SPRING_JPA_HIBERNATE_DDL_AUTO="update"
 ```
 
-### Variables de Entorno Frontend
-
-El frontend ya está configurado en `src/lib/api.ts`:
-
-```typescript
-const API_BASE_URL = process.env.VITE_API_URL || 'http://localhost:8080/api';
-```
-
-Si necesitas cambiar, crear `.env` en la raíz:
-
-```
-VITE_API_URL=http://tu-backend:8080/api
-```
+**Nota:** La aplicación usa variables de entorno con fallbacks en `application.yml`. Puedes usar cualquiera de estos métodos.
 
 ## 10. Troubleshooting
 
@@ -304,17 +325,24 @@ npm install
 npm run dev
 ```
 
-### ❌ Backend falla al conectar BD
+### ❌ Backend falla al conectar a BD
 
 ```powershell
-# Verificar que PostgreSQL está corriendo
-docker ps | findstr postgres
+# 1️⃣ Verificar que PostgreSQL está corriendo
+Get-Service -Name postgresql-x64-17 | Select-Object Status
 
-# Ver logs del contenedor
-docker logs turnopro-postgres
+# 2️⃣ Conectar manualmente a PostgreSQL
+"C:\Program Files\PostgreSQL\17\bin\psql" -U postgres -h localhost -c "SELECT version();"
 
-# Reiniciar contenedor
-docker restart turnopro-postgres
+# 3️⃣ Verificar que existe la BD "turnopro"
+"C:\Program Files\PostgreSQL\17\bin\psql" -U postgres -h localhost -c "\l"
+
+# 4️⃣ Si falta la BD, crearla
+"C:\Program Files\PostgreSQL\17\bin\psql" -U postgres -h localhost -c "CREATE DATABASE turnopro;"
+
+# 5️⃣ Verificar credenciales en backend/src/main/resources/application.yml
+# Usuario: postgres
+# Contraseña: (tu pass de postgres)
 ```
 
 ### ❌ Puerto 5173 o 8080 ya está en uso
@@ -326,24 +354,44 @@ netstat -ano | findstr :8080
 
 # Matar proceso (ejemplo PID 1234)
 taskkill /PID 1234 /F
+
+# O cambiar puerto en aplicación (si es necesario)
 ```
 
-### ❌ Error de dependencias Maven
+### ❌ Backend no compila - Error Maven
 
 ```powershell
 cd backend
-mvn clean install -U  # -U fuerza descarga de artifacts nuevos
+
+# Limpiar caché y reintentar
+mvn clean install -U
+
+# Si persiste, verificar Java
+java -version  # Debe ser 21.x
+
+# Verificar Maven
+mvn -version   # Debe ser 3.9+
 ```
 
-### ❌ HMR (Hot Module Reload) no funciona en frontend
+### ❌ Frontend no carga después de npm run dev
 
-Verificar en `vite.config.ts` que HMR está habilitado:
+```powershell
+# Limpiar caché de npm
+npm cache clean --force
 
-```typescript
-server: {
-  hmr: true
-}
+# Reinstalar dependencias
+npm install
+
+# Reintentar
+npm run dev
 ```
+
+### ❌ Error de conexión API Frontend-Backend
+
+1. Verificar que backend está corriendo en `http://localhost:8080`
+2. Revisar `src/lib/api.ts` - URL debe ser correcta
+3. Verificar CORS en backend (Spring Security)
+4. Revisar browser console (F12) para mensajes de error
 
 ## 11. Scripts Disponibles
 
