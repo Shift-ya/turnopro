@@ -5,6 +5,10 @@ server:
     context-path: /api
   error:
     include-message: always
+  tomcat:
+    threads:
+      max: 200
+      min-spare: 10
 
 spring:
   application:
