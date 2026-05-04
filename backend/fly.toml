@@ -37,5 +37,3 @@ primary_region = 'iad'
   cpu_kind = 'shared'
   cpus = 1
   memory_mb = 1024
-    type = "http"
->>>>>>> copilot/worktree-2026-05-04T17-09-54
