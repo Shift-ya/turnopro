@@ -1,5 +1,6 @@
 server:
   port: ${PORT:${SERVER_PORT:8080}}
+  address: 0.0.0.0
   servlet:
     context-path: /api
   error:
@@ -57,7 +58,7 @@ app:
     refresh-expiration: ${JWT_REFRESH:604800000}
 
   cors:
-    allowed-origins: ${CORS_ORIGINS}
+    allowed-origins: ${CORS_ORIGINS:http://localhost:5173}
 
   frontend-url: ${FRONTEND_URL}
 
