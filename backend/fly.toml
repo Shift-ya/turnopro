@@ -42,11 +42,11 @@ primary_region = 'iad'
 
 [checks]
   [checks.http]
-    grace_period = "40s"
+    grace_period = "180s"
     interval = "10s"
     method = "GET"
-    path = "/api/health"
+    path = "/actuator/health"
     protocol = "http"
-    timeout = "5s"
+    timeout = "10s"
     type = "http"
 >>>>>>> copilot/worktree-2026-05-04T17-09-54
