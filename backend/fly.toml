@@ -1,18 +1,18 @@
-# fly.toml app configuration file generated for turnow on 2026-05-04T12:52:03Z
+# fly.toml app configuration file generated for dev-turnow on 2026-05-04T20:42:07Z
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = 'turnow'
-primary_region = 'iad'
+app = 'dev-turnow'
+primary_region = 'gru'
 
 [build]
 
 [env]
-  SPRING_PROFILES_ACTIVE = "prod"
-  PORT = "8080"
-  LOGGING_LEVEL_ROOT = "INFO"
-  JAVA_OPTS = "-Dserver.address=0.0.0.0"
+  JAVA_OPTS = '-Dserver.address=0.0.0.0'
+  LOGGING_LEVEL_ROOT = 'INFO'
+  PORT = '8080'
+  SPRING_PROFILES_ACTIVE = 'prod'
 
 [http_service]
   internal_port = 8080
@@ -22,18 +22,18 @@ primary_region = 'iad'
   min_machines_running = 1
   processes = ['app']
 
+[checks]
+  [checks.http]
+    type = 'http'
+    interval = '10s'
+    timeout = '5s'
+    grace_period = '40s'
+    method = 'GET'
+    path = '/api/health'
+    protocol = 'http'
+
 [[vm]]
   memory = '1gb'
   cpu_kind = 'shared'
   cpus = 1
   memory_mb = 1024
-
-[checks]
-  [checks.http]
-    grace_period = "40s"
-    interval = "10s"
-    method = "GET"
-    path = "/api/health"
-    protocol = "http"
-    timeout = "5s"
-    type = "http"
