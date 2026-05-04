@@ -29,7 +29,7 @@ primary_region = 'gru'
     timeout = '5s'
     grace_period = '140s'
     method = 'GET'
-    path = '/'
+    path = '/api/actuator/health'
     protocol = 'http'
 
 [[vm]]

@@ -23,7 +23,7 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 // Health-check must be first — no authentication required
-                .requestMatchers("/actuator/health", "/actuator/**").permitAll()
+                .requestMatchers("/api/actuator/health", "/api/actuator/**").permitAll()
                 .requestMatchers("/api/**").permitAll()
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .anyRequest().permitAll()
