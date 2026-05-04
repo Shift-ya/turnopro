@@ -1,4 +1,4 @@
-# turnow - Guía Completa del Proyecto
+# turnow - Guía del Proyecto
 
 Proyecto **SaaS multi-tenant** para gestión de turnos con autenticación JWT, disponibilidad de profesionales y bookings.
 
@@ -6,52 +6,89 @@ Este repositorio integra:
 
 - **Frontend**: React 19 + Vite + TypeScript + Tailwind CSS
 - **Backend**: Spring Boot 3.2.3 + Java 21 + PostgreSQL
-- **Arquitectura**: Multi-tenant con autenticación JWT y roles (SUPER_ADMIN, TENANT_ADMIN, PROFESSIONAL, USER)
+- **Arquitectura**: Multi-tenant con autenticación JWT y roles
 
 ---
 
-## 🚀 Quick Start (5 minutos)
+## 🚀 Quick Start Local
 
-Si solo quieres levantar el proyecto rápidamente:
+Hoy el backend local ya no depende de PostgreSQL instalado en tu máquina. Arranca con los scripts del repo y usa **Supabase** como base de datos de desarrollo.
+
+### 1) Backend
 
 ```powershell
-# Terminal 1: Backend
-cd C:\Users\(usuario)\Documents\turnow\backend
-mvn clean package -q  # Primera vez
-java -jar target/turnow-backend-1.0.0-SNAPSHOT.jar
-# ✅ Backend en: http://localhost:8080/api
-
-# Terminal 2: Frontend
 cd C:\Users\(usuario)\Documents\turnow
-npm install  # Primera vez
-npm run dev
-# ✅ Frontend en: http://localhost:5173
+.\start-backend.ps1
 ```
 
-**Requisito:** PostgreSQL 17 corriendo en `localhost:5432` con:
-- Usuario: `postgres`
-- Contraseña: `(tu pass de postgres)`
+También disponible en batch:
+
+```batch
+start-backend.bat
+```
+
+Qué hace el script:
+- Carga `backend/.env.local`
+- Recompila el backend antes de arrancar
+- Usa el profile `dev`
+- Ajusta automáticamente la conexión al pooler de Supabase cuando detecta una URL `pooler.supabase.com`
+
+### 2) Frontend
+
+```powershell
+cd C:\Users\(usuario)\Documents\turnow
+npm install   # primera vez
+npm run dev
+```
+
+Backend esperado: `http://localhost:8080/api`
+Frontend esperado: `http://localhost:5173`
+
+### 3) Verificación rápida
+
+- Health check: `http://localhost:8080/api/actuator/health`
+- Login demo: `POST http://localhost:8080/api/auth/login`
+- Tenant demo público: `GET http://localhost:8080/api/public/tenant/bella-vida-spa`
+
+---
+
+## Configuración local requerida
+
+El archivo `backend/.env.local` debe existir y contener variables como estas:
+
+```env
+DATABASE_URL=jdbc:postgresql://aws-1-us-east-2.pooler.supabase.com:6543/postgres?sslmode=require
+DATABASE_USER=postgres.xxxxxxxxxxxxxxxxxxxx
+DATABASE_PASSWORD=tu_password_de_supabase
+JWT_SECRET=tu_jwt_secret
+SPRING_PROFILES_ACTIVE=dev
+```
+
+Notas:
+- No hace falta poner la password dentro de `DATABASE_URL`.
+- Si la URL apunta al pooler de Supabase, el script agrega `prepareThreshold=0` para evitar errores de prepared statements.
+- `backend/.env.local` no debería commitearse.
 
 ---
 
 ## 1. Estado Actual del Proyecto
 
-✅ **Estado en Producción Local:**
+✅ **Estado funcional actual:**
 
-- ✅ Frontend corriendo en http://localhost:5173 (Vite dev server con HMR)
-- ✅ Backend corriendo en http://localhost:8080/api (Spring Boot + JWT)
-- ✅ PostgreSQL funcional (instalado localmente en puerto 5432)
+- ✅ Frontend corriendo en `http://localhost:5173` (Vite dev server con HMR)
+- ✅ Backend corriendo en `http://localhost:8080/api` (Spring Boot + JWT)
+- ✅ Conexión a Supabase mediante pooler desde local y también desde Railway
 - ✅ Autenticación JWT implementada
 - ✅ Controladores REST funcionales:
-  - `AuthController` - Login, logout, autenticación
+  - `AuthController` - Login y autenticación
   - `PublicBookingController` - Reservas públicas
   - `SuperAdminController` - Administración super usuario
   - `TenantAdminController` - Administración de tenant
 - ✅ Entidades de dominio completas (User, Tenant, Professional, Service, Appointment, etc.)
 - ✅ Servicios de negocio implementados
-- ✅ Base de datos `turnow` automáticamente creada en el primer inicio
+- ✅ Datos demo iniciales cargados en entorno local cuando la base está vacía
 
-**Integración Frontend-Backend:** Configurada en `src/lib/api.ts` (http://localhost:8080/api)
+**Integración Frontend-Backend:** Configurada en `src/lib/api.ts` para `http://localhost:8080/api`
 
 ## 2. Stack tecnico
 
@@ -77,8 +114,8 @@ npm run dev
 
 ### Base de datos
 
-- PostgreSQL 17 (instalado localmente)
-- DB: `turnow` (auto-creada)
+- PostgreSQL gestionado en Supabase (pooler para local y Railway)
+- El backend usa `backend/.env.local` para cargar credenciales y conectarse al pooler
 
 ## 3. Estructura del repo
 
@@ -107,65 +144,55 @@ npm run dev
 - **npm** 10+ (verificar con `npm -v`)
 - **Java** 21 LTS (verificar con `java -version`)
 - **Maven** 3.9+ (verificar con `mvn -version`)
-- **PostgreSQL** 17+ (instalado localmente en puerto 5432)
-  - Usuario: `postgres`
-  - Contraseña: `postgres` (ó tu pass de Postgres)
-  - Base de datos: `turnow` (se crea automáticamente en el primer inicio)
 - **Git** (para control de versiones)
+- **Acceso a Supabase** para las credenciales de desarrollo local y Railway
 
 ## 5. Levantando el Proyecto Completo
 
 ### Ubicación del Proyecto
-```
+
+```text
 C:\Users\(usuario)\Documents\turnow
 ```
 
 ### ✅ Pasos Rápidos (Recomendado)
 
-#### 1️⃣ Verificar PostgreSQL
-
-```powershell
-# Asegúrate de que PostgreSQL 17 está corriendo
-# La BD "turnow" se crea automáticamente en el primer inicio del backend
-```
-
-#### 2️⃣ Backend (Spring Boot) - Terminal 1
-
-```powershell
-cd C:\Users\(usuario)\Documents\turnow\backend
-
-# Primera vez: compilar
-mvn clean package
-
-# Iniciar el servidor
-java -jar target/turnow-backend-1.0.0-SNAPSHOT.jar
-```
-
-**Resultado esperado:**
-```
-Started turnowApplication in X.XXX seconds
-2026-04-16 09:25:00.000  INFO 1234 --- [main] com.turnow.turnowApplication : Started
-```
-
-El backend estará disponible en: **http://localhost:8080/api**
-
-#### 3️⃣ Frontend (React + Vite) - Terminal 2
+#### 1️⃣ Backend (PowerShell o BAT)
 
 ```powershell
 cd C:\Users\(usuario)\Documents\turnow
+.\start-backend.ps1
+```
 
-# Primera vez: instalar dependencias
-npm install
+Alternativa:
 
-# Iniciar servidor de desarrollo
+```batch
+start-backend.bat
+```
+
+El script hace lo siguiente:
+- carga `backend/.env.local`
+- recompila el backend antes de arrancar
+- usa `SPRING_PROFILES_ACTIVE=dev` si no está definido
+- habilita compatibilidad con el pooler de Supabase (`prepareThreshold=0`)
+
+**Resultado esperado:**
+- `Tomcat started on port 8080 (http) with context path '/api'`
+- backend disponible en `http://localhost:8080/api`
+
+#### 2️⃣ Frontend (React + Vite)
+
+```powershell
+cd C:\Users\(usuario)\Documents\turnow
+npm install   # primera vez
 npm run dev
 ```
 
 **Resultado esperado:**
-```
-  VITE v7.2.4  ready in 1625 ms
-  ➜  Local:   http://localhost:5173/
-  ➜  Network: use --host to expose
+
+```text
+VITE ... ready
+➜ Local: http://localhost:5173/
 ```
 
 El frontend estará disponible en: **http://localhost:5173**
@@ -177,14 +204,14 @@ El frontend estará disponible en: **http://localhost:5173**
 Si prefieres ejecutar las versiones compiladas:
 
 ```powershell
-# Backend (ya compilado con mvn clean package)
+# Backend (ya compilado por el script de inicio)
 cd C:\Users\(usuario)\Documents\turnow\backend
-java -jar target/turnow-backend-1.0.0-SNAPSHOT.jar
+java -jar target\turnow-backend-1.0.0-SNAPSHOT.jar
 
 # Frontend (en otra terminal)
 cd C:\Users\(usuario)\Documents\turnow
-npm run build  # Genera dist/index.html
-npm run preview  # Sirve en http://localhost:4173
+npm run build
+npm run preview   # Sirve en http://localhost:4173
 ```
 
 ## 6. URLs de Acceso
@@ -193,39 +220,38 @@ npm run preview  # Sirve en http://localhost:4173
 |-----------|-----|--------|-------|
 | **Frontend** | http://localhost:5173 | 5173 | Vite dev server con HMR activo |
 | **Backend API** | http://localhost:8080/api | 8080 | Context path: `/api` |
-| **PostgreSQL** | localhost:5432 | 5432 | User: `postgres`, Pass: `(tu pass de postgres)` |
 | **Health Check** | http://localhost:8080/api/actuator/health | - | Verificar backend activo |
+| **Railway API** | `https://apidev-turnow.shift-ya.online/api` | - | Usa el `PORT` inyectado por Railway |
 
 ## 7. Primeros Pasos en la App
 
 ### Acceder a la App
 
-1. Abre http://localhost:5173 en tu navegador
-2. Verás la **Landing Page**
+1. Abre `http://localhost:5173` en tu navegador
+2. Verás la landing page
 
 ### Navegación
 
-- **Landing Page** → Inicio
-- **Login** → Autenticación (implementado con JWT)
+- **Login** → Autenticación (JWT)
 - **Super Admin Dashboard** → Gestión global (usuarios, tenants)
-- **Tenant Admin Dashboard** → Gestión de tenant (profesionales, servicios)  
+- **Tenant Admin Dashboard** → Gestión de tenant (profesionales, servicios)
 - **Public Booking** → Reserva de turnos pública
 
 ### Endpoints del Backend
 
+#### Salud
+- `GET /api/actuator/health` - Verifica que el backend esté vivo
+
 #### Autenticación
 - `POST /api/auth/login` - Login con email/password
-- `POST /api/auth/logout` - Logout
-- `POST /api/auth/refresh` - Refresh token JWT
 
 #### Público
-- `GET /api/public/bookings` - Listar turnos disponibles
-- `POST /api/public/bookings` - Crear reserva
-
-#### Admin
-- `GET /api/super-admin/users` - Listar usuarios (super admin)
-- `GET /api/tenant-admin/professionals` - Listar profesionales
-- `POST /api/tenant-admin/services` - Crear servicio
+- `GET /api/public/tenant/{slug}` - Datos públicos del tenant
+- `GET /api/public/tenant/{slug}/services` - Servicios del tenant
+- `GET /api/public/tenant/{slug}/professionals` - Profesionales del tenant
+- `GET /api/public/tenant/{slug}/slots` - Slots disponibles
+- `POST /api/public/tenant/{slug}/appointments` - Crear reserva
+- `POST /api/public/appointments/cancel/{token}` - Cancelar reserva por token
 
 ## 8. Estructura del Proyecto
 
@@ -286,121 +312,100 @@ npm run preview  # Sirve en http://localhost:4173
 └─ README.md                        # Este archivo
 ```
 
-## 9. Configuración Avanzada
+## 9. Variables de Entorno y Configuración
 
-### Variables de Entorno Backend
+### Backend local
 
-Crear archivo `.env` en la raíz de `backend/` o definir en powershell:
+El backend local lee `backend/.env.local` automáticamente desde `start-backend.ps1` o `start-backend.bat`.
 
-```powershell
-# Base de Datos
-$env:DATABASE_URL="jdbc:postgresql://localhost:5432/turnow"
-$env:DATABASE_USER="postgres"
-$env:DATABASE_PASSWORD="(tu pass de postgres)"
+Ejemplo de contenido:
 
-# JWT (generar con: openssl rand -base64 32)
-$env:JWT_SECRET="tu-secret-key-muy-segura"
-$env:JWT_EXPIRATION="86400000"  # 24 horas en ms
-
-# Email (opcional, para notificaciones)
-$env:MAIL_HOST="smtp.gmail.com"
-$env:MAIL_PORT="587"
-$env:MAIL_USERNAME="tu-email@gmail.com"
-$env:MAIL_PASSWORD="tu-app-password"
-
-# Hibernate (opciones: update | validate | create-drop)
-$env:SPRING_JPA_HIBERNATE_DDL_AUTO="update"
+```env
+DATABASE_URL=jdbc:postgresql://aws-1-us-east-2.pooler.supabase.com:6543/postgres?sslmode=require
+DATABASE_USER=postgres.xxxxxxxxxxxxxxxxxxxx
+DATABASE_PASSWORD=tu_password_de_supabase
+JWT_SECRET=tu_jwt_secret
+SPRING_PROFILES_ACTIVE=dev
 ```
 
-**Nota:** La aplicación usa variables de entorno con fallbacks en `application.yml`. Puedes usar cualquiera de estos métodos.
+Notas:
+- Si usas el pooler de Supabase, el script agrega `prepareThreshold=0` para evitar errores de prepared statements.
+- El backend recompila antes de arrancar, así que no necesitas ejecutar `mvn package` manualmente.
+- `HIBERNATE_DDL_AUTO=update` puede usarse temporalmente para bootstrap si la base está vacía.
+
+### Railway
+
+Usa variables equivalentes en Railway:
+- `DATABASE_URL`
+- `DATABASE_USER`
+- `DATABASE_PASSWORD`
+- `JWT_SECRET`
+- `PORT` lo inyecta Railway automáticamente
 
 ## 10. Troubleshooting
 
-### ❌ Frontend no inicia
+### ❌ El backend no arranca localmente
+
+1. Verifica que exista `backend/.env.local`
+2. Ejecuta `.\start-backend.ps1` desde la raiz del repo
+3. Revisa el log y confirma que aparezca `Tomcat started on port 8080`
+
+### ❌ Error de conexión a Supabase
+
+1. Verifica que `DATABASE_URL` apunte al pooler `aws-1-us-east-2.pooler.supabase.com:6543`
+2. Confirma que `DATABASE_USER` y `DATABASE_PASSWORD` sean válidos
+3. Si aparece `prepared statement already exists`, revisa que el script haya aplicado `prepareThreshold=0`
+
+### ❌ Error de schema vacío
+
+Si la base de Supabase está vacía y ves errores de tablas faltantes:
 
 ```powershell
-# Limpiar caché y reinstalar
-rm node_modules -Recurse -Force
-npm install
-npm run dev
+$env:HIBERNATE_DDL_AUTO="update"
+.\start-backend.ps1
 ```
 
-### ❌ Backend falla al conectar a BD
-
-```powershell
-# 1️⃣ Verificar que PostgreSQL está corriendo
-Get-Service -Name postgresql-x64-17 | Select-Object Status
-
-# 2️⃣ Conectar manualmente a PostgreSQL
-"C:\Program Files\PostgreSQL\17\bin\psql" -U postgres -h localhost -c "SELECT version();"
-
-# 3️⃣ Verificar que existe la BD "turnow"
-"C:\Program Files\PostgreSQL\17\bin\psql" -U postgres -h localhost -c "\l"
-
-# 4️⃣ Si falta la BD, crearla
-"C:\Program Files\PostgreSQL\17\bin\psql" -U postgres -h localhost -c "CREATE DATABASE turnow;"
-
-# 5️⃣ Verificar credenciales en backend/src/main/resources/application.yml
-# Usuario: postgres
-# Contraseña: (tu pass de postgres)
-```
+Luego podés volver a `validate` si querés dejar el entorno más estricto.
 
 ### ❌ Puerto 5173 o 8080 ya está en uso
 
 ```powershell
-# Encontrar proceso usando puerto
 netstat -ano | findstr :5173
 netstat -ano | findstr :8080
 
-# Matar proceso (ejemplo PID 1234)
-taskkill /PID 1234 /F
-
-# O cambiar puerto en aplicación (si es necesario)
+taskkill /PID <pid> /F
 ```
 
-### ❌ Backend no compila - Error Maven
+### ❌ Frontend no carga después de `npm run dev`
 
 ```powershell
-cd backend
-
-# Limpiar caché y reintentar
-mvn clean install -U
-
-# Si persiste, verificar Java
-java -version  # Debe ser 21.x
-
-# Verificar Maven
-mvn -version   # Debe ser 3.9+
-```
-
-### ❌ Frontend no carga después de npm run dev
-
-```powershell
-# Limpiar caché de npm
 npm cache clean --force
-
-# Reinstalar dependencias
 npm install
-
-# Reintentar
 npm run dev
 ```
 
 ### ❌ Error de conexión API Frontend-Backend
 
-1. Verificar que backend está corriendo en `http://localhost:8080`
-2. Revisar `src/lib/api.ts` - URL debe ser correcta
-3. Verificar CORS en backend (Spring Security)
-4. Revisar browser console (F12) para mensajes de error
+1. Verificar que el backend esté corriendo en `http://localhost:8080/api`
+2. Revisar `src/lib/api.ts` si la URL está correcta
+3. Verificar CORS en backend
+4. Revisar la consola del navegador
 
 ## 11. Scripts Disponibles
+
+### Backend
+
+```powershell
+.\start-backend.ps1
+start-backend.bat
+```
 
 ### Frontend
 
 ```bash
-npm run dev       # Iniciar servidor dev (http://localhost:5173)
-npm run build     # Build para producción
-npm run preview   # Previsualizar build en local
+npm run dev
+npm run build
+npm run preview
 ```
 
 ### Backend
@@ -575,75 +580,57 @@ Definidas en `backend/src/main/resources/application.yml`:
 
 - `server.port` (default `8080`)
 - `server.servlet.context-path` (default `/api`)
-- `DATABASE_URL` (default `jdbc:postgresql://localhost:5432/turnow`)
-- `DATABASE_USER` (default `postgres`)
-- `DATABASE_PASSWORD` (default `postgres`)
+- `DATABASE_URL` (Supabase pooler en local y Railway)
+- `DATABASE_USER`
+- `DATABASE_PASSWORD`
 - `JWT_SECRET`
 - `JWT_EXPIRATION`
 - `CORS_ORIGINS`
 - `FRONTEND_URL`
 
-Variable util temporal de desarrollo:
+Variable útil temporal de desarrollo:
 
-- `SPRING_JPA_HIBERNATE_DDL_AUTO=update`
+- `HIBERNATE_DDL_AUTO=update`
 
-## 10. Comandos operativos utiles
+## 10. Comandos operativos útiles
 
-### Ver logs PostgreSQL
+### Backend local
 
 ```powershell
-docker logs -f turnow-postgres
+cd C:\Users\(usuario)\Documents\turnow
+.\start-backend.ps1
 ```
 
-### Entrar a PostgreSQL y listar tablas
+### Frontend local
 
 ```powershell
-docker exec -it turnow-postgres psql -U postgres -d turnow -c "\dt"
-```
-
-### Parar PostgreSQL
-
-```powershell
-docker stop turnow-postgres
-```
-
-### Volver a iniciar PostgreSQL
-
-```powershell
-docker start turnow-postgres
-```
-
-### Borrar contenedor y datos (solo si queres resetear)
-
-```powershell
-docker rm -f turnow-postgres
+cd C:\Users\(usuario)\Documents\turnow
+npm run dev
 ```
 
 ## 11. Troubleshooting
 
-### Error backend: `Connection to localhost:5432 refused`
+### Error backend: `prepared statement already exists`
 
 Causa:
 
-- PostgreSQL no esta corriendo.
+- La URL está apuntando al pooler de Supabase y el driver está usando prepared statements.
 
-Solucion:
+Solución:
 
-```powershell
-docker start turnow-postgres
-```
+- Dejá que `start-backend.ps1` agregue `prepareThreshold=0` automáticamente.
 
-### Error backend en DB vacia por schema
+### Error backend en DB vacía por schema
 
 Causa:
 
-- No hay migraciones Flyway versionadas en `db/migration`.
+- La base de Supabase no tiene tablas todavía.
 
-Solucion temporal:
+Solución temporal:
 
 ```powershell
-$env:SPRING_JPA_HIBERNATE_DDL_AUTO='update'
-mvn spring-boot:run
+$env:HIBERNATE_DDL_AUTO='update'
+.\start-backend.ps1
 ```
 
 ### Frontend no abre en 5173
@@ -665,4 +652,6 @@ Para pasar de demo a producto integrable:
 5. Agregar tests (unitarios + integracion + e2e).
 
 ---
+
+
 
