@@ -1,7 +1,7 @@
 # 📊 Análisis Completo: turnow
 
-**Fecha de análisis:** 16 de Abril, 2026  
-**Estado del proyecto:** En desarrollo
+**Fecha de análisis:** 5 de Mayo, 2026  
+**Estado del proyecto:** En desarrollo (JWT implementado, routing finalizado)
 
 ---
 
@@ -19,10 +19,12 @@ Frontend (React 19.2.3 + TypeScript + Vite)    ↔    Backend (Spring Boot + Jav
 ### ✅ ENDPOINTS IMPLEMENTADOS
 
 #### 1️⃣ **Autenticación** (`/auth`)
-- ✅ `POST /auth/login` - Login con email/password
+- ✅ `POST /auth/login` - Login con email/password + JWT
   - Request: `{ email, password }`
-  - Response: `{ id, tenantId, email, name, role }`
+  - Response: `{ accessToken, tokenType, expiresIn, userId, tenantId, email, fullName, role }`
+  - JWT firmado con HS256, válido por 24h
   - Roles: SUPER_ADMIN, TENANT_ADMIN, STAFF, CLIENT
+  - Password encoding: BCrypt con fallback a plaintext
 
 #### 2️⃣ **Super Admin** (`/admin/super`)
 - ✅ `GET /admin/super/overview` - Dashboard global
@@ -61,10 +63,14 @@ Frontend (React 19.2.3 + TypeScript + Vite)    ↔    Backend (Spring Boot + Jav
 - **TenantSettingsRepository** - Configuración por tenant (colores, etc)
 
 ### 🔒 SEGURIDAD
-- CSRF deshabilitado (apropiado para SPA)
-- CORS configurado
-- Session stateless (sin estado)
-- Todos los endpoints `/api/**` permitidos sin autenticación (⚠️ TODO: Implementar autenticación)
+- ✅ **JWT implementado** - HS256 firmado, claims: userId, tenantId, role, email (sub)
+- ✅ **JwtAuthenticationFilter** - Valida token en cada request
+- ✅ **@PreAuthorize** - Control de acceso por rol en endpoints admin
+- ✅ **CORS configurado** - Permite localhost en dev, dominios específicos en prod
+- ✅ **Session stateless** (sin cookies de sesión)
+- ✅ **CSRF deshabilitado** (apropiado para SPA con JWT)
+- ✅ **Password encoding** - BCrypt con fallback a plaintext para migración
+- ✅ **Environment-based secrets** - JWT_SECRET via env var en dev/prod
 
 ---
 
@@ -132,12 +138,77 @@ Métodos disponibles:
 ```
 
 ### 🎭 CONTEXTO DE AUTENTICACIÓN
-- ✅ AuthContext: Maneja user, login/logout
-- ✅ Persistencia en localStorage
+- ✅ **AuthContext** - Maneja user + token binding
+- ✅ **JWT persistence** - Token almacenado en localStorage['turnow_token']
+- ✅ **Session hydration** - Lee token + user al cargar la página
+- ✅ **Token propagation** - Bearer token enviado en Authorization header
+- ✅ **isAuthenticated** - Requiere user + token (no solo uno)
+- ✅ **isReady** - Previene redirects prematuros durante hydration
 
 ### 🎨 COMPONENTES UI
 - ✅ MetricCard - Tarjeta de métrica
 - ✅ StatusBadge - Badge de estado
+- ✅ BaseFormDialog - Dialog genérico reutilizable para formularios
+- ✅ EditProfessionalDialog - Modal para editar profesionales
+- ✅ EditServiceDialog - Modal para editar servicios
+- ✅ CreateProfessionalDialog - Modal para crear profesionales
+- ✅ CreateServiceDialog - Modal para crear servicios
+- ✅ Toast system - Notificaciones con sonner + framer-motion
+
+---
+
+## ⚙️ RUNTIME CONFIG (Dev/Prod)
+
+### 📁 Configuración Frontend
+
+**Archivo:** `src/lib/runtimeConfig.ts`
+- ✅ Detección automática de ambiente por hostname
+- ✅ Carga dinámica de configuración desde `/config.json` o `/config.development.json`
+- ✅ Endpoints configurables por ambiente
+
+**Ambientes:**
+- **Local** → API: `https://apidev-turnow.shiftya.online/api` (forces dev mode)
+- **Dev** → API: `https://apidev-turnow.shiftya.online/api`
+- **Prod** → API: `https://api-turnow.shiftya.online/api`
+
+**Archivos de config:**
+- `public/config.development.json` - Dev (incluido en git)
+- `public/config.json` - Prod (actualizar en deployment)
+
+---
+
+## 🛣️ REACT ROUTER (Routing implementado)
+
+### ✅ Estructura de Rutas
+```
+/ → LandingRoute (detecta ambiente y redirige)
+  ├─ /login → RequireGuestLayout → LoginPage (solo sin autenticación)
+  ├─ /dashboard → RequireAuthLayout → DashboardRoute
+  │   ├─ /super-admin → SuperAdminDashboard (si role=SUPER_ADMIN)
+  │   └─ /tenant-admin → TenantAdminDashboard (si role=TENANT_ADMIN)
+  └─ /booking → PublicBooking (sin protección)
+```
+
+### ✅ Guards Implementados (Layouts Separados)
+
+**RequireAuthLayout** (`src/routes/RequireAuthLayout.tsx`)
+- Valida: `isReady && isAuthenticated`
+- Si falla → Redirige a `/login`
+- Renderiza: `<Outlet />` para nested routes
+
+**RequireGuestLayout** (`src/routes/RequireGuestLayout.tsx`)
+- Valida: Usuario NO autenticado
+- Si falla → Redirige a `/dashboard`
+- Permite login sin estar logueado
+
+**LandingRoute** (`src/routes/LandingRoute.tsx`)
+- En localhost/dev → Redirige a `/login`
+- En prod → Redirige a landing URL externa
+
+**DashboardRoute** (`src/routes/DashboardRoute.tsx`)
+- Renderiza dashboard según rol
+- SUPER_ADMIN → SuperAdminDashboard
+- TENANT_ADMIN → TenantAdminDashboard
 
 ---
 
@@ -146,57 +217,26 @@ Métodos disponibles:
 ### BACKEND
 | Funcionalidad | Estado | Prioridad | Notas |
 |---|---|---|---|
-| **Autenticación JWT** | ❌ Sin implementar | 🔴 CRÍTICA | Ahora es password plano sin token |
-| **Validación de tokens** | ❌ Sin implementar | 🔴 CRÍTICA | Cualquiera puede acceder a endpoints protegidos |
-| **Refresh token** | ❌ Sin implementar | 🔴 CRÍTICA | Mencionado en README pero no existe |
-| **Logout** | ❌ Sin implementar | 🟡 MEDIA | Solo lado cliente |
+| **Refresh token** | ❌ Sin implementar | 🔴 CRÍTICA | Endpoint separado para renovar token |
+| **Logout endpoint** | ❌ Sin implementar | 🟡 MEDIA | Blacklist de tokens (opcional, solo client-side por ahora) |
 | **Notificaciones por email** | ❌ Sin implementar | 🟡 MEDIA | Reminders y confirmaciones de cita |
-| **Disponibilidad (Availability)** | ✅ Parcial | 🟡 MEDIA | SlotCalculator existe pero incomplete |
-| **Editar profesional** | ⚠️ API existe, no completa | 🟡 MEDIA | Falta lógica en controller |
-| **Editar servicio** | ⚠️ API existe, no completa | 🟡 MEDIA | Falta lógica en controller |
-| **Cancelación de citas** | ⚠️ Existe por token | 🟢 BAJA | Pero falta validación |
-| **Validación de datos** | ❌ Minimal | 🟡 MEDIA | Agregar más validaciones |
+| **Disponibilidad (Availability)** | ✅ Parcial | 🟡 MEDIA | SlotCalculator existe pero incompleto |
+| **Cancelación de citas** | ⚠️ Existe por token | 🟢 BAJA | Pero falta validación adicional |
+| **Validación de datos** | ⚠️ Básica | 🟡 MEDIA | Agregar más @Valid decorators |
 
 ### FRONTEND
 | Funcionalidad | Estado | Prioridad | Notas |
 |---|---|---|---|
-| **Editar profesional** | ✅ Dialog + animaciones | 🟡 MEDIA | Dialog modal reutilizable con BaseFormDialog |
-| **Editar servicio** | ✅ Dialog + animaciones | 🟡 MEDIA | Dialog modal reutilizable con BaseFormDialog |
-| **Notificación de éxito/error** | ✅ Sistema de toasts | 🟡 MEDIA | sonner + framer-motion + hook useToast |
-| **Loading states** | ✅ Implementado | 🟡 MEDIA | Loading en dialogs de edición |
-| **Manejo de errores** | ✅ Con toasts | 🟡 MEDIA | Toasts en todas las operaciones CRUD |
-| **Validaciones de formularios** | ✅ Campos requeridos | 🟡 MEDIA | Validación HTML5 implementada |
-| **Responsive design mobile** | ⚠️ Parcial | 🟢 BAJA | Sidebar existe pero mejorable |
-| **Editar tenant (admin)** | ❌ Sin UI | 🟡 MEDIA | Está en backend |
+| **Refresh token automático** | ❌ No implementado | 🔴 CRÍTICA | Renovar JWT antes de expirar |
+| **Error handling 401/403** | ⚠️ Parcial | 🟡 MEDIA | Redirigir a login si token inválido |
+| **Editar tenant (admin)** | ❌ Sin UI | 🟡 MEDIA | Está en backend, falta frontend |
 | **Filtros avanzados** | ❌ Sin implementar | 🟢 BAJA | Por fecha, estado, etc |
 | **Exportar datos** | ❌ Sin implementar | 🟢 BAJA | CSV, PDF |
+| **Responsive design mobile** | ⚠️ Parcial | 🟢 BAJA | Sidebar existe pero mejorable |
 
 ---
 
-## 🔗 RUTAS DE INTEGRACIÓN
-
-### ENDPOINTS QUE NECESITAN INTERFAZ FRONTEND
-
-1. **`PUT /admin/tenant/{tenantId}/professionals/{professionalId}`**
-   - ❌ UI Modal de edición falta
-   - Botón Edit en tabla de profesionales
-
-2. **`PUT /admin/tenant/{tenantId}/services/{serviceId}`**
-   - ❌ UI Modal de edición falta
-   - Botón Edit en tabla de servicios
-
-3. **`PUT /admin/tenant/{tenantId}/settings`**
-   - ⚠️ Existe UI pero incompleta
-   - Faltan campos de color picker
-
-### ENDPOINTS SIN USAR EN FRONTEND
-
-1. **`GET /admin/tenant/{tenantId}/services`**
-   - ✅ Incluida en `/overview` pero podría tener endpoint dedicado
-
----
-
-## 🎨 COMPONENTES UI IMPLEMENTADOS (✅ 17 Abril 2026)
+## 🎨 COMPONENTES UI IMPLEMENTADOS (✅ 5 Mayo 2026)
 
 ### Estructura Base Creada
 
@@ -207,6 +247,7 @@ Se implementó una **arquitectura reutilizable de componentes UI** con soporte p
 - **`button.tsx`** - Button reutilizable con variantes (default, outline, ghost, destructive)
 - **`input.tsx`** - Input con estilos Tailwind
 - **`label.tsx`** - Label para formularios
+- **`toaster.tsx`** - Notificaciones con sonner
 
 #### 2️⃣ Componente Base Reutilizable (`/src/components/dialogs/`)
 - **`BaseFormDialog.tsx`** - Componente **genérico** para crear dialogs con formularios
@@ -216,67 +257,69 @@ Se implementó una **arquitectura reutilizable de componentes UI** con soporte p
   - Estados de loading automáticos
   - Trigger personalizable (botón o componente custom)
 
-#### 3️⃣ Dialog Especializado
-- **`EditProfessionalDialog.tsx`** - Dialog para editar profesionales
+#### 3️⃣ Dialogs Especializados - CRUD Profesionales
+- **`CreateProfessionalDialog.tsx`** - Dialog para crear profesionales
   - ✅ Campos: firstName, lastName, email, phone, speciality
+  - ✅ Animaciones elegantes
+  - ✅ Integrado en TenantAdminDashboard
+- **`EditProfessionalDialog.tsx`** - Dialog para editar profesionales
+  - ✅ Campos: firstName, lastName, email, phone, speciality (con defaultValue)
   - ✅ Animaciones elegantes (cascada de entrada)
+  - ✅ Integrado en TenantAdminDashboard
+
+#### 4️⃣ Dialogs Especializados - CRUD Servicios
+- **`CreateServiceDialog.tsx`** - Dialog para crear servicios
+  - ✅ Campos: name, description, category, duration, price
   - ✅ Integrado en TenantAdminDashboard
 - **`EditServiceDialog.tsx`** - Dialog para editar servicios
-  - ✅ Campos: name, description, category, duration, price
+  - ✅ Campos: name, description, category, duration, price (con defaultValue)
   - ✅ Animaciones elegantes (cascada de entrada)
   - ✅ Integrado en TenantAdminDashboard
 
-### ✅ Funcionalidad Implementada
+#### 5️⃣ Dialogs Especializados - Settings
+- **`EditTenantDialog.tsx`** - Dialog para editar datos del tenant
+  - ✅ Campos: name, email, phone
+  - ✅ Integrado en TenantAdminDashboard
+- **`EditTenantColorDialog.tsx`** - Dialog para editar color theme del tenant
+  - ✅ Color picker integrado
+  - ✅ Preview en tiempo real
 
-#### Editar Profesional
-- ✅ Dialog modal reutilizable
-- ✅ Campos: firstName, lastName, email, phone, speciality
-- ✅ Validación de campos requeridos
-- ✅ Loading states automáticos
-- ✅ Animaciones suaves
-- ✅ Integrado en TenantAdminDashboard pestana "Profesionales"
-
-#### Editar Servicio
-- ✅ Dialog modal reutilizable
-- ✅ Campos: name, description, category, duration, price
-- ✅ Validación de campos requeridos
-- ✅ Integrado en TenantAdminDashboard
+### ✅ Sistema de Notificaciones
+- ✅ `useToast()` hook personalizado para toasts
+- ✅ Integración con sonner + framer-motion
+- ✅ Toasts en todas las operaciones CRUD
+- ✅ Manejo de errores con toast messages
 
 ### 🔄 Cómo Agregar Nuevas Variantes
 
-Para crear un nuevo dialog (ej: EditServiceDialog):
+Para crear un nuevo dialog (ej: NewFeatureDialog):
 
 ```tsx
-// src/components/dialogs/EditServiceDialog.tsx
+// src/components/dialogs/NewFeatureDialog.tsx
 import { BaseFormDialog, type FormField } from "./BaseFormDialog";
-import type { ApiService } from "@/lib/api";
 
-interface EditServiceDialogProps {
-  service: ApiService;
+interface NewFeatureDialogProps {
   onSave: (data: any) => Promise<void>;
 }
 
-export const EditServiceDialog = ({ service, onSave }: EditServiceDialogProps) => {
+export const NewFeatureDialog = ({ onSave }: NewFeatureDialogProps) => {
   const fields: FormField[] = [
     {
       id: "name",
-      label: "Nombre del servicio",
+      label: "Nombre",
       type: "text",
       required: true,
-      defaultValue: service.name,
     },
     // ... más campos
   ];
 
   return (
     <BaseFormDialog
-      title="Editar Servicio"
+      title="Nueva Funcionalidad"
       fields={fields}
       onSubmit={onSave}
-      triggerAsChild
-    >
-      {/* Trigger custom si quieres */}
-    </BaseFormDialog>
+      triggerLabel="Crear"
+    />
   );
 };
 ```
@@ -284,21 +327,13 @@ export const EditServiceDialog = ({ service, onSave }: EditServiceDialogProps) =
 ### 📦 Dependencias Instaladas
 
 ```bash
-@radix-ui/react-dialog      # Dialog primitivo
-@radix-ui/react-icons       # Icons (Cross2Icon)
-@radix-ui/react-slot        # For forwardRef with asChild
-class-variance-authority    # Para variantes de componentes
+@radix-ui/react-dialog          # Dialog primitivo
+@radix-ui/react-icons           # Icons (Cross2Icon)
+@radix-ui/react-slot            # For forwardRef with asChild
+class-variance-authority        # Para variantes de componentes
+sonner                          # Toast notifications
+framer-motion                   # Animaciones suaves
 ```
-
-### 🎯 Próximas Tareas (Dialogs Similar)
-
-| Dialog | Estado | Dificultad | Notas |
-|--------|--------|-----------|-------|
-| **EditServiceDialog** | ✅ Completado | Fácil | Integrado en TenantAdminDashboard |
-| **CreateServiceDialog** | ✅ Completado | Fácil | Integrado en TenantAdminDashboard |
-| **NotificationToast** | ✅ Completado | Media | Sistema completo con sonner + framer-motion |
-| **CreateProfessionalDialog** | ❌ Falta | Fácil | Sin campo defaultValue |
-| **ConfirmDeleteDialog** | ❌ Falta | Media | Dialog de confirmación |
 
 ---
 
@@ -332,64 +367,103 @@ class-variance-authority    # Para variantes de componentes
 
 ## 🚀 PLAN DE IMPLEMENTACIÓN SUGERIDO
 
-### Fase 1: Seguridad (CRÍTICA) - Semana 1
-1. Implementar JWT en backend
-2. Proteger endpoints con @Secured
-3. Agregar token al frontend API client
-4. Validar roles en endpoints
+### ✅ Fase 1: Seguridad & Routing (COMPLETADA)
+- ✅ JWT implementado en backend (HS256)
+- ✅ JwtAuthenticationFilter + validación de tokens
+- ✅ @PreAuthorize en endpoints admin
+- ✅ React Router con nested routes
+- ✅ Route guards (RequireAuthLayout, RequireGuestLayout)
+- ✅ Token persistence en localStorage
+- ✅ Bearer token propagation en API client
 
-### Fase 2: Funcionalidades faltantes (FRONTEND) - Semana 1-2
-1. Modal de edición profesional
-2. Modal de edición servicio
-3. Toast/Alert system
-4. Validaciones robustas
+### 🔧 Fase 2: Runtime Config & Deployment (COMPLETADA)
+- ✅ Runtime config para dev/prod con detección de hostname
+- ✅ Config files (`config.json`, `config.development.json`)
+- ✅ API endpoints configurables por ambiente
+- ✅ Backend compilado con JWT implementation
 
-### Fase 3: Completar Backend - Semana 2
-1. Terminar lógica de PUT profesional/servicio
-2. Implementar email notifications
-3. Mejor manejo de errores
+### 🎨 Fase 3: UI/UX Polish (EN PROGRESO)
+- ✅ BaseFormDialog component (reutilizable)
+- ✅ CRUD Dialogs: Create/Edit para Profesionales y Servicios
+- ✅ Toast notification system (sonner + framer-motion)
+- ✅ Loading states + error handling
+- ✅ Integración en TenantAdminDashboard
+- ⏳ Responsive design mobile (pending minor tweaks)
+- ⏳ Refresh token automation (priority: CRITICAL)
 
-### Fase 4: Polish - Semana 3
-1. Responsive design mobile
-2. Tests unitarios
-3. Documentación de API (Swagger)
+### 🔴 Fase 4: Funcionalidades Críticas (PENDING)
+1. **Refresh token endpoint** - Renovar JWT antes de expirar
+2. **Error handling 401/403** - Redirigir a login si token inválido
+3. **Email notifications** - Confirmaciones y reminders de citas
+4. **Logout proper** - Limpiar token + blacklist (opcional)
+
+### 🟡 Fase 5: Polish & Testing (PENDING)
+1. Unit tests para AuthContext
+2. E2E tests para login flow
+3. Integration tests para CRUD operations
+4. Swagger/OpenAPI documentation
 
 ---
 
-## 📅 DEADLINE SUGERIDO
+## 📅 ESTADO ACTUAL
 
-**Para entregar a compañeros en estado "production-ready":**
+**MVP (mínimo viable):** 🟢 **80% COMPLETADO**
+- ✅ JWT implementado y funcionando (backend)
+- ✅ CRUD completo (C, R, U, D) en UI
+- ✅ React Router con guards
+- ✅ Runtime config dev/prod
+- ⏳ **BLOCKER**: Backend en Fly.io no tiene código actualizado (token falta en response)
+- ⚠️ Refresh token no implementado
 
-- **MVP (mínimo viable):** 🟢 **1-2 semanas**
-  - Seguridad JWT implementada
-  - CRUD completo (C, R, U, D funcionan)
-  - UI básica responsive
+**Beta completo:** 🟡 **Estimado 3-5 días más**
+- Desplegar backend actualizado a Fly.io
+- Implementar refresh token
+- Tests E2E
 
-- **Beta completo:** 🟡 **2-3 semanas**
-  - Todas las funcionalidades
-  - Notificaciones de email
-  - Tests
-
-- **Release v1.0:** 🔴 **3-4 semanas**
-  - Polish completo
-  - Documentación
-  - Deployment
-
-**RECOMENDACIÓN:** Entregar MVP en **10 días hábiles** (2 semanas) con:
-- ✅ JWT implementado
-- ✅ 4 dashboards funcionando
-- ✅ Booking completo
-- ⚠️ Ediciones (front) en rama separada
+**Release v1.0:** 🔴 **Estimado 1-2 semanas más**
+- Email notifications
+- Polish completo
+- Production hardening
 
 ---
 
 ## 🎯 PRÓXIMOS PASOS INMEDIATOS
 
-1. **Implementar JWT en AuthController**
-2. **Agregar @PreAuthorize a endpoints admin**
-3. **Crear Modal de edición de profesional (TenantAdminDashboard)**
-4. **Integrar Toast notifications**
-5. **Tests E2E de booking flow**
+### 🔴 BLOCKER CRÍTICO (AHORA)
+1. **Redeploy backend a Fly.io** con código JWT actualizado
+   - El servidor remoto NO tiene el AuthResponse con token
+   - Compilar y desplegar el JAR actualizado
+   - Verificar login response incluye `accessToken`
+
+### 🟡 POST-DEPLOYMENT
+2. **Implementar refresh token endpoint** en backend
+   - `POST /auth/refresh` - Renovar JWT si aún es válido
+   - Actualizar frontend para renovar automáticamente
+
+3. **Error handling 401/403** en frontend
+   - Interceptar en api.ts
+   - Redirigir a /login si 401
+   - Mostrar error amigable si 403
+
+4. **Validar E2E login flow**
+   - Login → recibe token + user
+   - Token guardado en localStorage
+   - Dashboard protegido accesible
+   - Logout limpia token
+
+---
+
+## 📊 RESUMEN DE PROGRESO
+
+| Componente | Estado | Bloqueado | Notas |
+|-----------|--------|-----------|-------|
+| **JWT Backend** | ✅ Código OK | ⏳ No deployed | AuthController.java correcto, servidor remoto outdated |
+| **JWT Frontend** | ✅ Almacenaje OK | ⏳ Esperando token | API client listo para Bearer token |
+| **React Router** | ✅ Completo | ❌ No | Routes + Guards implementadas |
+| **CRUD UI** | ✅ Completo | ❌ No | Dialogs + Forms working |
+| **Runtime Config** | ✅ Completo | ❌ No | Dev/Prod separation OK |
+| **Refresh Token** | ❌ No start | ⏳ Priority | Necesario para UX fluido |
+| **Email Notif** | ❌ No start | 🟢 Low priority | Para futuro |
 
 ---
 

@@ -1,6 +1,7 @@
 import { getApiBaseUrl } from './runtimeConfig';
 
 const TOKEN_KEY = 'turnow_token';
+let isRefreshing = false;
 
 export function getStoredToken(): string | null {
   try {
@@ -22,6 +23,39 @@ export function setStoredToken(token: string | null) {
   }
 }
 
+async function refreshToken(): Promise<string | null> {
+  const apiBase = await getApiBaseUrl();
+  const token = getStoredToken();
+
+  if (!token) {
+    return null;
+  }
+
+  try {
+    const res = await fetch(`${apiBase}/auth/refresh`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!res.ok) {
+      setStoredToken(null);
+      window.location.href = '/login';
+      return null;
+    }
+
+    const data = (await res.json()) as { accessToken: string };
+    setStoredToken(data.accessToken);
+    return data.accessToken;
+  } catch (error) {
+    setStoredToken(null);
+    window.location.href = '/login';
+    return null;
+  }
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const apiBase = await getApiBaseUrl();
   const token = getStoredToken();
@@ -33,10 +67,32 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     headers.set('Authorization', `Bearer ${token}`);
   }
 
-  const res = await fetch(`${apiBase}${path}`, {
+  let res = await fetch(`${apiBase}${path}`, {
     headers,
     ...restInit,
   });
+
+  // Si es 401 (token expirado), intentar refresh
+  if (res.status === 401 && !isRefreshing) {
+    isRefreshing = true;
+    const newToken = await refreshToken();
+    isRefreshing = false;
+
+    if (newToken) {
+      // Reintentar con nuevo token
+      const newHeaders = new Headers(initHeaders || {});
+      newHeaders.set('Content-Type', 'application/json');
+      newHeaders.set('Authorization', `Bearer ${newToken}`);
+
+      res = await fetch(`${apiBase}${path}`, {
+        headers: newHeaders,
+        ...restInit,
+      });
+    } else {
+      // Refresh falló, redirigir a login
+      throw new Error('Sesión expirada');
+    }
+  }
 
   if (!res.ok) {
     let message = `HTTP ${res.status}`;

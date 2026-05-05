@@ -40,7 +40,33 @@ public class AuthController {
         user.setLastLoginAt(LocalDateTime.now());
         userRepository.save(user);
 
-        return ResponseEntity.ok(AuthResponse.of(token, 86400000L, user));
+        // 1 hour = 3600000 ms
+        return ResponseEntity.ok(AuthResponse.of(token, 3600000L, user));
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponse> refresh(@RequestHeader("Authorization") String authHeader) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new BusinessException("Token inválido");
+        }
+
+        String token = authHeader.substring(7);
+
+        if (!jwtTokenProvider.validateToken(token)) {
+            throw new BusinessException("Token expirado o inválido");
+        }
+
+        String email = jwtTokenProvider.extractEmail(token);
+        User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new BusinessException("Usuario no encontrado"));
+
+        if (!user.getActive()) {
+            throw new BusinessException("Usuario inactivo");
+        }
+
+        String newToken = jwtTokenProvider.generateToken(user);
+        // 1 hour = 3600000 ms
+        return ResponseEntity.ok(AuthResponse.of(newToken, 3600000L, user));
     }
 
     private boolean isPasswordValid(String rawPassword, String storedPassword) {
