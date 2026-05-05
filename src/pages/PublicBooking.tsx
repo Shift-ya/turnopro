@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Clock, ArrowLeft, ArrowRight, CheckCircle2, User, Mail, Phone, ChevronLeft, ChevronRight, MapPin } from 'lucide-react';
 import { api, type ApiProfessional, type ApiService, type PublicTenant } from '../lib/api';
+import { useToast } from '../hooks/useToast';
+import { TOAST_MESSAGES } from '../types/toast';
 
 interface Props {
   onNavigate: (page: string) => void;
@@ -18,6 +20,7 @@ function toIsoDate(d: Date) {
 }
 
 export default function PublicBooking({ onNavigate }: Props) {
+  const { success, error: showError } = useToast();
   const [tenant, setTenant] = useState<PublicTenant | null>(null);
   const [services, setServices] = useState<ApiService[]>([]);
   const [professionals, setProfessionals] = useState<ApiProfessional[]>([]);
@@ -95,6 +98,8 @@ export default function PublicBooking({ onNavigate }: Props) {
         clientNotes: '',
       });
 
+      success(TOAST_MESSAGES.appointment.createSuccess);
+
       setStep(1);
       setSelectedService(null);
       setSelectedProfessional(null);
@@ -104,9 +109,10 @@ export default function PublicBooking({ onNavigate }: Props) {
       setClientName('');
       setClientEmail('');
       setClientPhone('');
-      alert('Turno reservado con exito');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo reservar el turno');
+      const message = e instanceof Error ? e.message : 'No se pudo reservar el turno';
+      setError(message);
+      showError(TOAST_MESSAGES.appointment.createError);
     } finally {
       setBooking(false);
     }

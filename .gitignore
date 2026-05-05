@@ -46,8 +46,10 @@ ehthumbs.db
 
 # Environment variables
 .env
-.env.local
-.env.*.local
+application-local.yml
+.env.development
+.env.test.local
+.env.production
 
 # Temporary files
 *.tmp
@@ -64,3 +66,5 @@ out/
 
 # Git
 .gitkeep
+.env.production
+.env.development

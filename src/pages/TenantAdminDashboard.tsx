@@ -2,7 +2,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { CalendarDays, Users, Briefcase, BarChart3, Settings, LogOut, Menu, X, Bell, Plus, Clock, DollarSign, UserCheck, TrendingUp, Edit2, Trash2, Power } from 'lucide-react';
 import MetricCard from '../components/ui/MetricCard';
 import StatusBadge from '../components/ui/StatusBadge';
+import { EditProfessionalDialog } from '../components/dialogs/EditProfessionalDialog';
+import { EditServiceDialog } from '../components/dialogs/EditServiceDialog';
+import { CreateServiceDialog } from '../components/dialogs/CreateServiceDialog';
+import { EditTenantDialog } from '../components/dialogs/EditTenantDialog';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../hooks/useToast';
+import { TOAST_MESSAGES } from '../types/toast';
 import { api, type ApiAppointment, type ApiProfessional, type ApiService, type ApiTenant } from '../lib/api';
 
 interface Props {
@@ -13,10 +19,14 @@ type Tab = 'dashboard' | 'calendar' | 'professionals' | 'services' | 'settings';
 
 export default function TenantAdminDashboard({ onNavigate }: Props) {
   const { user, logout } = useAuth();
+  const { success, error: showError } = useToast();
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [savingProfessional, setSavingProfessional] = useState(false);
+  const [savingService, setSavingService] = useState(false);
+  const [savingTenant, setSavingTenant] = useState(false);
 
   const [tenant, setTenant] = useState<ApiTenant | null>(null);
   const [metrics, setMetrics] = useState<any>(null);
@@ -87,7 +97,26 @@ export default function TenantAdminDashboard({ onNavigate }: Props) {
     await loadData();
   };
 
-  const editProfessional = async (p: ApiProfessional) => {
+  const editProfessional = async (data: { firstName: string; lastName: string; email: string; phone: string; speciality: string; active: boolean }, professionalId: string) => {
+    if (!tenantId) return;
+    setSavingProfessional(true);
+    try {
+      await api.updateTenantProfessional(tenantId, professionalId, data);
+      await loadData();
+      success(TOAST_MESSAGES.professional.updateSuccess);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Error al actualizar profesional';
+      setError(message);
+      showError({
+        title: TOAST_MESSAGES.professional.updateError.title,
+        message: TOAST_MESSAGES.professional.updateError.message,
+      });
+    } finally {
+      setSavingProfessional(false);
+    }
+  };
+
+  const editProfessionalLegacy = async (p: ApiProfessional) => {
     if (!tenantId) return;
     const fullName = prompt('Nombre y apellido:', p.name);
     if (!fullName) return;
@@ -97,8 +126,15 @@ export default function TenantAdminDashboard({ onNavigate }: Props) {
     const [firstName, ...rest] = fullName.trim().split(' ');
     const lastName = rest.join(' ') || '-';
 
-    await api.updateTenantProfessional(tenantId, p.id, { firstName, lastName, email, phone, speciality, active: p.active });
-    await loadData();
+    setSavingProfessional(true);
+    try {
+      await api.updateTenantProfessional(tenantId, p.id, { firstName, lastName, email, phone, speciality, active: p.active });
+      await loadData();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al actualizar profesional');
+    } finally {
+      setSavingProfessional(false);
+    }
   };
 
   const toggleProfessional = async (p: ApiProfessional) => {
@@ -115,33 +151,116 @@ export default function TenantAdminDashboard({ onNavigate }: Props) {
     await loadData();
   };
 
-  const addService = async () => {
+  const addService = async (data: { name: string; description: string; duration: number; price: number; category: string }) => {
     if (!tenantId) return;
-    const name = prompt('Nombre del servicio:');
-    if (!name) return;
-    const description = prompt('Descripcion:') || '';
-    const duration = Number(prompt('Duracion en minutos:', '60') || '60');
-    const price = Number(prompt('Precio:', '0') || '0');
-    await api.createTenantService(tenantId, { name, description, duration, price, active: true });
-    await loadData();
+    setSavingService(true);
+    try {
+      await api.createTenantService(tenantId, { 
+        name: data.name, 
+        description: data.description, 
+        duration: data.duration, 
+        price: data.price,
+        category: data.category,
+        active: true 
+      });
+      await loadData();
+      success(TOAST_MESSAGES.service.createSuccess);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Error al crear servicio';
+      setError(message);
+      showError({
+        title: TOAST_MESSAGES.service.createError.title,
+        message: TOAST_MESSAGES.service.createError.message,
+      });
+    } finally {
+      setSavingService(false);
+    }
   };
 
-  const editService = async (s: ApiService) => {
+  const editService = async (data: { name: string; description: string; duration: number; price: number; active: boolean; category: string }, serviceId: string) => {
+    if (!tenantId) return;
+    setSavingService(true);
+    try {
+      await api.updateTenantService(tenantId, serviceId, data);
+      await loadData();
+      success(TOAST_MESSAGES.service.updateSuccess);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Error al actualizar servicio';
+      setError(message);
+      showError({
+        title: TOAST_MESSAGES.service.updateError.title,
+        message: TOAST_MESSAGES.service.updateError.message,
+      });
+    } finally {
+      setSavingService(false);
+    }
+  };
+
+  const editServiceLegacy = async (s: ApiService) => {
     if (!tenantId) return;
     const name = prompt('Nombre del servicio:', s.name);
     if (!name) return;
     const description = prompt('Descripcion:', s.description || '') || '';
     const duration = Number(prompt('Duracion en minutos:', String(s.duration)) || String(s.duration));
     const price = Number(prompt('Precio:', String(s.price)) || String(s.price));
-    await api.updateTenantService(tenantId, s.id, { name, description, duration, price, active: s.active });
-    await loadData();
+    setSavingService(true);
+    try {
+      await api.updateTenantService(tenantId, s.id, { name, description, duration, price, active: s.active, category: s.category });
+      await loadData();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al actualizar servicio');
+    } finally {
+      setSavingService(false);
+    }
   };
 
   const removeService = async (s: ApiService) => {
     if (!tenantId) return;
     if (!confirm(`Eliminar servicio ${s.name}?`)) return;
-    await api.deleteTenantService(tenantId, s.id);
-    await loadData();
+    try {
+      await api.deleteTenantService(tenantId, s.id);
+      await loadData();
+      success(TOAST_MESSAGES.service.deleteSuccess);
+    } catch (e) {
+      showError({
+        title: TOAST_MESSAGES.service.deleteError.title,
+        message: TOAST_MESSAGES.service.deleteError.message,
+      });
+    }
+  };
+
+  const editTenant = async (data: {
+    name: string;
+    email: string;
+    phone: string;
+    address: string;
+    slug: string;
+    primaryColor: string;
+  }) => {
+    if (!tenantId) return;
+    setSavingTenant(true);
+    try {
+      await api.updateTenantSettings(tenantId, {
+        businessName: data.name,
+        email: data.email,
+        phone: data.phone,
+        address: data.address,
+        slug: data.slug,
+        primaryColor: data.primaryColor,
+      });
+      await loadData();
+      success({
+        title: '✅ Información actualizada',
+        message: 'Los cambios se guardaron correctamente',
+      });
+    } catch (e) {
+      showError({
+        title: '❌ Error al actualizar',
+        message: 'No se pudo guardar los cambios',
+      });
+    } finally {
+      setSavingTenant(false);
+    }
   };
 
   const saveSettings = async () => {
@@ -236,7 +355,7 @@ export default function TenantAdminDashboard({ onNavigate }: Props) {
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-gray-900">{a.clientName}</p>
-                            <p className="text-xs text-gray-500">{getServiceName(a.serviceId)} � {getProfName(a.professionalId)}</p>
+                            <p className="text-xs text-gray-500">{getServiceName(a.serviceId)} � {getProfName(a.professionalId)}</p>
                           </div>
                           <StatusBadge status={a.status} />
                         </div>
@@ -272,7 +391,7 @@ export default function TenantAdminDashboard({ onNavigate }: Props) {
                     <div key={a.id} className="flex items-center gap-4 p-3 rounded-xl border border-gray-100">
                       <div className="w-28 text-sm text-gray-500">{a.date} {a.startTime.slice(0, 5)}</div>
                       <div className="flex-1 text-sm font-medium text-gray-900">{a.clientName}</div>
-                      <div className="text-xs text-gray-500">{getServiceName(a.serviceId)} � {getProfName(a.professionalId)}</div>
+                      <div className="text-xs text-gray-500">{getServiceName(a.serviceId)} � {getProfName(a.professionalId)}</div>
                       <StatusBadge status={a.status} />
                     </div>
                   ))
@@ -293,7 +412,11 @@ export default function TenantAdminDashboard({ onNavigate }: Props) {
                     <p className="text-xs text-gray-500 mt-2">{p.email}</p>
                     <p className="text-xs text-gray-500">{p.phone}</p>
                     <div className="mt-4 pt-4 border-t border-gray-100 flex gap-2">
-                      <button onClick={() => editProfessional(p)} className="flex-1 py-1.5 text-sm font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition flex items-center justify-center gap-1"><Edit2 size={13} /> Editar</button>
+                      <EditProfessionalDialog
+                        professional={p}
+                        onSave={(data) => editProfessional(data, p.id)}
+                        isLoading={savingProfessional}
+                      />
                       <button onClick={() => toggleProfessional(p)} className="py-1.5 px-3 text-sm text-gray-400 border border-gray-200 rounded-lg hover:bg-gray-50 transition"><Power size={13} /></button>
                     </div>
                   </div>
@@ -305,7 +428,10 @@ export default function TenantAdminDashboard({ onNavigate }: Props) {
           {!loading && activeTab === 'services' && (
             <div className="space-y-4">
               <div className="flex justify-end">
-                <button onClick={addService} className="px-4 py-2.5 bg-primary-600 text-white text-sm font-medium rounded-xl hover:bg-primary-700 transition flex items-center gap-2"><Plus size={16} /> Agregar Servicio</button>
+                <CreateServiceDialog
+                  onSave={addService}
+                  isLoading={savingService}
+                />
               </div>
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {services.map((s) => (
@@ -317,7 +443,11 @@ export default function TenantAdminDashboard({ onNavigate }: Props) {
                       <div className="flex items-center gap-1 font-semibold text-gray-900"><DollarSign size={14} /> ${s.price.toLocaleString()}</div>
                     </div>
                     <div className="mt-4 pt-4 border-t border-gray-100 flex gap-2">
-                      <button onClick={() => editService(s)} className="flex-1 py-1.5 text-sm font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition flex items-center justify-center gap-1"><Edit2 size={13} /> Editar</button>
+                      <EditServiceDialog
+                        service={s}
+                        onSave={(data) => editService(data, s.id)}
+                        isLoading={savingService}
+                      />
                       <button onClick={() => removeService(s)} className="py-1.5 px-3 text-sm text-red-400 border border-gray-200 rounded-lg hover:bg-red-50 transition"><Trash2 size={13} /></button>
                     </div>
                   </div>
@@ -327,23 +457,51 @@ export default function TenantAdminDashboard({ onNavigate }: Props) {
           )}
 
           {!loading && activeTab === 'settings' && (
-            <div className="max-w-2xl space-y-6">
-              <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
-                <h3 className="font-semibold text-gray-900">Informacion del Negocio</h3>
-                <input value={businessName} onChange={(e) => setBusinessName(e.target.value)} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm" placeholder="Nombre" />
-                <div className="grid grid-cols-2 gap-4">
-                  <input value={businessEmail} onChange={(e) => setBusinessEmail(e.target.value)} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm" placeholder="Email" />
-                  <input value={businessPhone} onChange={(e) => setBusinessPhone(e.target.value)} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm" placeholder="Telefono" />
+            <div className="bg-white rounded-2xl border border-gray-100 p-6 max-w-2xl">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6">Configuración del negocio</h3>
+
+              {/* Info Display */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div>
+                  <p className="text-sm font-medium text-gray-500 mb-1">Nombre</p>
+                  <p className="text-base text-gray-900 font-medium">{tenant?.name}</p>
                 </div>
-                <input value={businessAddress} onChange={(e) => setBusinessAddress(e.target.value)} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm" placeholder="Direccion" />
-                <input value={businessSlug} onChange={(e) => setBusinessSlug(e.target.value)} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm" placeholder="Slug" />
-                <div className="flex items-center gap-3">
-                  <input type="color" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} className="w-10 h-10 rounded border-0" />
-                  <span className="text-sm text-gray-500">Color principal</span>
+                <div>
+                  <p className="text-sm font-medium text-gray-500 mb-1">Email</p>
+                  <p className="text-base text-gray-900 font-medium">{tenant?.email}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-500 mb-1">Teléfono</p>
+                  <p className="text-base text-gray-900 font-medium">{tenant?.phone || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-500 mb-1">Dirección</p>
+                  <p className="text-base text-gray-900 font-medium">{tenant?.address || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-500 mb-1">URL pública (slug)</p>
+                  <p className="text-base text-gray-900 font-medium">{tenant?.slug}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-500 mb-1">Color primario</p>
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="w-8 h-8 rounded-full border-2 border-gray-300"
+                      style={{ backgroundColor: tenant?.primaryColor || '#6366f1' }}
+                    />
+                    <p className="text-base text-gray-900 font-medium">{tenant?.primaryColor || '#6366f1'}</p>
+                  </div>
                 </div>
               </div>
 
-              <button onClick={saveSettings} className="w-full py-3 bg-primary-600 text-white font-semibold rounded-xl hover:bg-primary-700 transition">Guardar Cambios</button>
+              {/* Edit Button */}
+              {tenant && (
+                <EditTenantDialog
+                  tenant={tenant}
+                  onSave={editTenant}
+                  isLoading={savingTenant}
+                />
+              )}
             </div>
           )}
         </main>

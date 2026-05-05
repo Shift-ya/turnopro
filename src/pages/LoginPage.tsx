@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Calendar, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../hooks/useToast';
+import { TOAST_MESSAGES } from '../types/toast';
 
 interface Props {
   onNavigate: (page: string) => void;
@@ -8,6 +10,7 @@ interface Props {
 
 export default function LoginPage({ onNavigate }: Props) {
   const { login } = useAuth();
+  const { success, error: showError } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
@@ -15,7 +18,7 @@ export default function LoginPage({ onNavigate }: Props) {
   const [loading, setLoading] = useState(false);
 
   const quickLogins = [
-    { label: 'Super Admin', email: 'admin@turnopro.com' },
+    { label: 'Super Admin', email: 'admin@turnow.com' },
     { label: 'Admin Negocio', email: 'maria@bellavida.com' },
     { label: 'Staff', email: 'pedro@bellavida.com' },
   ];
@@ -31,8 +34,13 @@ export default function LoginPage({ onNavigate }: Props) {
     const ok = await login(email, password);
     setLoading(false);
 
-    if (ok) onNavigate('dashboard');
-    else setError('Credenciales invalidas');
+    if (ok) {
+      success(TOAST_MESSAGES.auth.loginSuccess);
+      onNavigate('dashboard');
+    } else {
+      setError('Credenciales invalidas');
+      showError(TOAST_MESSAGES.auth.loginError);
+    }
   };
 
   const quickLogin = async (em: string) => {
@@ -40,15 +48,20 @@ export default function LoginPage({ onNavigate }: Props) {
     const ok = await login(em, 'demo123');
     setLoading(false);
 
-    if (ok) onNavigate('dashboard');
-    else setError('No se pudo iniciar sesion rapida');
+    if (ok) {
+      success(TOAST_MESSAGES.auth.loginSuccess);
+      onNavigate('dashboard');
+    } else {
+      setError('No se pudo iniciar sesion rapida');
+      showError(TOAST_MESSAGES.auth.loginError);
+    }
   };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <div className="p-4">
-        <button onClick={() => onNavigate('landing')} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition">
-          <ArrowLeft size={16} /> Volver al inicio
+        <button onClick={() => window.location.href = '/'} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition">
+          <ArrowLeft size={16} /> Volver al sitio
         </button>
       </div>
       <div className="flex-1 flex items-center justify-center px-4 py-8">
@@ -57,7 +70,7 @@ export default function LoginPage({ onNavigate }: Props) {
             <div className="w-12 h-12 bg-primary-600 rounded-xl flex items-center justify-center mx-auto mb-4">
               <Calendar size={24} className="text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">Bienvenido a TurnoPro</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Bienvenido a turnow</h1>
             <p className="text-gray-500 mt-2 text-sm">Ingresa a tu cuenta para gestionar tu negocio</p>
           </div>
 

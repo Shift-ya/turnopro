@@ -1,27 +1,35 @@
 server:
-  port: 8080
+  port: ${PORT:8080}
+  address: 0.0.0.0
   servlet:
     context-path: /api
+  error:
+    include-message: always
+  tomcat:
+    threads:
+      max: 200
+      min-spare: 10
 
 spring:
   application:
-    name: turnopro-backend
+    name: turnow-backend
 
   datasource:
-    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/turnopro}
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/turnow}
     username: ${DATABASE_USER:postgres}
-    password: ${DATABASE_PASSWORD:QUETEimporta1505}
+    password: ${DATABASE_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
     hikari:
-      maximum-pool-size: 20
-      minimum-idle: 5
+      maximum-pool-size: 8
+      minimum-idle: 2
       connection-timeout: 30000
       idle-timeout: 600000
       max-lifetime: 1800000
+      connection-test-query: "SELECT 1"
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: ${HIBERNATE_DDL_AUTO:validate}
     show-sql: false
     properties:
       hibernate:
@@ -30,15 +38,16 @@ spring:
         default_schema: public
 
   flyway:
-    enabled: true
+    enabled: false
     locations: classpath:db/migration
-    baseline-on-migrate: true
+    baseline-on-migrate: false
     out-of-order: false
+    validate-on-migrate: false
 
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME:noreply@turnopro.com}
+    username: ${MAIL_USERNAME:noreply@turnow.com}
     password: ${MAIL_PASSWORD:}
     properties:
       mail:
@@ -50,7 +59,7 @@ spring:
 # JWT Configuration
 app:
   jwt:
-    secret: ${JWT_SECRET:TurnoPro_Super_Secret_Key_2024_Change_In_Production_Min_256_bits}
+    secret: ${JWT_SECRET:turnow_Super_Secret_Key_2024_Change_In_Production_Min_256_bits}
     expiration: ${JWT_EXPIRATION:86400000}       # 24h en ms
     refresh-expiration: ${JWT_REFRESH:604800000} # 7 días en ms
 
@@ -63,17 +72,19 @@ app:
 
 # Actuator
 management:
+  server:
+    base-path: /
   endpoints:
     web:
       exposure:
         include: health,info,metrics
   endpoint:
     health:
-      show-details: when-authorized
+      show-details: never
 
 # Logging
 logging:
   level:
-    com.turnopro: DEBUG
+    com.turnow: DEBUG
     org.springframework.security: INFO
     org.hibernate.SQL: INFO

@@ -85,7 +85,7 @@ export default function SuperAdminDashboard({ onNavigate }: Props) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center"><Activity size={16} /></div>
-              <div><p className="font-bold text-sm">TurnoPro</p><p className="text-xs text-gray-400">Super Admin</p></div>
+              <div><p className="font-bold text-sm">turnow</p><p className="text-xs text-gray-400">Super Admin</p></div>
             </div>
             <button className="lg:hidden" onClick={() => setSidebarOpen(false)}><X size={20} /></button>
           </div>
