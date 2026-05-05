@@ -9,6 +9,7 @@ primary_region = "gru"
   PORT = "8080"
   SPRING_PROFILES_ACTIVE = "dev"
   APP_SEED_ENABLED = "false"
+  CORS_ORIGIN_PATTERNS = "http://localhost:5173,http://localhost:3000,https://*.shiftya.online,https://*.fly.dev"
 
 [http_service]
   internal_port = 8080

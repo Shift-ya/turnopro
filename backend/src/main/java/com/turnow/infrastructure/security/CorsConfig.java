@@ -9,16 +9,22 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Predicate;
 
 @Configuration
 public class CorsConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource(
-        @Value("${app.cors.allowed-origins:http://localhost:5173,https://dev.shiftya.online,https://www.shiftya.online}") String allowedOrigins
+        @Value("${app.cors.allowed-origins:http://localhost:5173,https://dev.shiftya.online,https://www.shiftya.online}") String allowedOrigins,
+        @Value("${app.cors.allowed-origin-patterns:}") String allowedOriginPatterns
     ) {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(Arrays.stream(allowedOrigins.split(",")).map(String::trim).toList());
+        config.setAllowedOrigins(splitCsv(allowedOrigins));
+        List<String> originPatterns = splitCsv(allowedOriginPatterns);
+        if (!originPatterns.isEmpty()) {
+            config.setAllowedOriginPatterns(originPatterns);
+        }
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(false);
@@ -26,5 +32,12 @@ public class CorsConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return source;
+    }
+
+    private static List<String> splitCsv(String value) {
+        return Arrays.stream(value.split(","))
+            .map(String::trim)
+            .filter(Predicate.not(String::isBlank))
+            .toList();
     }
 }

@@ -61,6 +61,7 @@ app:
 
   cors:
     allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:3000,https://dev.shiftya.online,https://www.shiftya.online}
+    allowed-origin-patterns: ${CORS_ORIGIN_PATTERNS:}
 
   frontend-url: ${FRONTEND_URL:http://localhost:5173}
 
