@@ -1,8 +1,3 @@
-# fly.toml app configuration file generated for dev-turnow on 2026-05-04T20:42:07Z
-#
-# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
-#
-
 app = 'dev-turnow'
 primary_region = 'gru'
 
@@ -11,26 +6,24 @@ primary_region = 'gru'
 [env]
   JAVA_OPTS = '-Dserver.address=0.0.0.0'
   LOGGING_LEVEL_ROOT = 'INFO'
-  PORT = '8080'
+  PORT = ${PORT:8080}
   SPRING_PROFILES_ACTIVE = 'prod'
 
 [http_service]
-  internal_port = 8080
+  internal_port = ${PORT:8080}
   force_https = true
   auto_stop_machines = 'off'
   auto_start_machines = true
   min_machines_running = 1
   processes = ['app']
 
-[checks]
-  [checks.http]
-    type = 'http'
-    interval = '10s'
-    timeout = '5s'
-    grace_period = '140s'
-    method = 'GET'
-    path = '/api/actuator/health'
-    protocol = 'http'
+  [[http_service.checks]]
+    interval = "15s"
+    timeout = "5s"
+    grace_period = "30s"
+    method = "GET"
+    path = "/api/actuator/health"
+    protocol = "http"
 
 [[vm]]
   memory = '1gb'
