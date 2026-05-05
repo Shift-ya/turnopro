@@ -1,11 +1,83 @@
+server:
+  port: ${PORT:8080}
+  address: 0.0.0.0
+  servlet:
+    context-path: /api
+  error:
+    include-message: always
+
 spring:
+  application:
+    name: turnow-backend
+
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USER}
+    password: ${DATABASE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      connection-test-query: "SELECT 1"
+
   jpa:
     show-sql: false
     hibernate:
-      ddl-auto: validate
+      # 🔥 IMPORTANTE: para primer deploy usar update
+      ddl-auto: ${HIBERNATE_DDL_AUTO:update}
+    properties:
+      hibernate:
+        format_sql: false
+        default_schema: public
+
+  flyway:
+    enabled: false
+
+  # Mail queda configurado pero NO rompe health
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration: ${JWT_EXPIRATION:86400000}
+    refresh-expiration: ${JWT_REFRESH:604800000}
+
+  cors:
+    # 🔥 preparado para futuro frontend deployado
+    allowed-origins: ${CORS_ORIGINS:http://localhost:5173}
+
+  frontend-url: ${FRONTEND_URL:http://localhost:5173}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+  endpoint:
+    health:
+      show-details: never
+
+  # 🔥 CLAVE: evita que mail rompa el health en prod
+  health:
+    mail:
+      enabled: false
 
 logging:
   level:
-    com.turnopro: INFO
-    org.springframework.security: WARN
-    org.hibernate.SQL: WARN
+    root: WARN
+    com.turnow: INFO
+    org.springframework.security: ERROR
