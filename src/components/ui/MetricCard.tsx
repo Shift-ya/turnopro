@@ -9,20 +9,22 @@ interface Props {
   color?: string;
 }
 
-export default function MetricCard({ title, value, icon, trend, trendUp, color = 'bg-white' }: Props) {
+export default function MetricCard({ title, value, icon, trend, trendUp, color }: Props) {
   return (
-    <div className={`${color} rounded-2xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-shadow`}>
-      <div className="flex items-start justify-between">
+    <div className={`${color ?? 'panel-light'} grain-overlay relative overflow-hidden p-5 transition duration-200 hover:-translate-y-1`}>
+      <div className="relative flex items-start justify-between gap-4">
         <div>
-          <p className="text-sm text-gray-500 font-medium">{title}</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#2ed7ff]">{title}</p>
+          <p className="mt-3 text-3xl font-bold tracking-[-0.05em] text-white">{value}</p>
           {trend && (
-            <p className={`text-xs mt-1 font-medium ${trendUp ? 'text-emerald-600' : 'text-red-500'}`}>
-              {trendUp ? '↑' : '↓'} {trend}
+            <p className={`mt-3 text-xs font-semibold ${trendUp ? 'text-emerald-300' : 'text-rose-300'}`}>
+              {trendUp ? 'Sube' : 'Baja'} {trend}
             </p>
           )}
         </div>
-        <div className="p-2.5 bg-gray-50 rounded-xl text-gray-600">{icon}</div>
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-3 text-[#5e92ff] shadow-[0_10px_22px_rgba(0,0,0,0.18)]">
+          {icon}
+        </div>
       </div>
     </div>
   );

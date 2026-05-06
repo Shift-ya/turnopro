@@ -82,10 +82,10 @@ export const EditServiceDialog: React.FC<EditServiceDialogProps> = ({
       <Button
         variant="ghost"
         size="sm"
-        className="h-8 w-8 p-0 hover:bg-blue-100 transition-all duration-200"
+        className="h-9 w-9 p-0 rounded-full border border-white/10 bg-white/5 hover:bg-white/10"
         title="Editar"
       >
-        <Pencil className="h-4 w-4 transition-transform group-hover:scale-110" />
+        <Pencil className="h-4 w-4" />
       </Button>
     </BaseFormDialog>
   );

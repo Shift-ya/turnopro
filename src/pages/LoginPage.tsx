@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Calendar, Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, LockKeyhole, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../hooks/useToast';
@@ -35,100 +35,141 @@ export default function LoginPage() {
     if (ok) {
       success(TOAST_MESSAGES.auth.loginSuccess);
       navigate('/dashboard', { replace: true });
-    } else {
-      setError('Credenciales invalidas');
-      showError(TOAST_MESSAGES.auth.loginError);
+      return;
     }
+
+    setError('Credenciales invalidas');
+    showError(TOAST_MESSAGES.auth.loginError);
   };
 
-  const quickLogin = async (em: string) => {
+  const quickLogin = async (value: string) => {
     setLoading(true);
-    const ok = await login(em, 'demo123');
+    const ok = await login(value, 'demo123');
     setLoading(false);
 
     if (ok) {
       success(TOAST_MESSAGES.auth.loginSuccess);
       navigate('/dashboard', { replace: true });
-    } else {
-      setError('No se pudo iniciar sesion rapida');
-      showError(TOAST_MESSAGES.auth.loginError);
+      return;
     }
+
+    setError('No se pudo iniciar sesion rapida');
+    showError(TOAST_MESSAGES.auth.loginError);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <div className="p-4">
-        <button onClick={() => navigate('/')} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition">
-          <ArrowLeft size={16} /> Volver al sitio
-        </button>
-      </div>
-      <div className="flex-1 flex items-center justify-center px-4 py-8">
-        <div className="w-full max-w-md">
-          <div className="text-center mb-8">
-            <div className="w-12 h-12 bg-primary-600 rounded-xl flex items-center justify-center mx-auto mb-4">
-              <Calendar size={24} className="text-white" />
-            </div>
-            <h1 className="text-2xl font-bold text-gray-900">Bienvenido a turnow</h1>
-            <p className="text-gray-500 mt-2 text-sm">Ingresa a tu cuenta para gestionar tu negocio</p>
-          </div>
+    <div className="relative min-h-screen overflow-hidden bg-[#020202] text-[#f5f5f5]">
+      <div className="absolute inset-0 bg-[radial-gradient(90%_70%_at_50%_18%,rgba(91,109,255,0.30)_0%,rgba(127,77,255,0.14)_42%,transparent_64%)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,9,18,0.12)_0%,rgba(8,9,18,0.48)_52%,rgba(8,9,18,0.86)_100%)]" />
+      <div className="absolute inset-0 opacity-40 [background-image:linear-gradient(to_right,rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.05)_1px,transparent_1px)] [background-size:56px_56px]" />
 
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="relative z-10 mx-auto flex min-h-screen max-w-7xl flex-col px-4 py-5 sm:px-6 lg:px-8">
+        <div className="mb-6 flex items-center justify-between">
+          <button
+            onClick={() => navigate('/')}
+            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-medium text-white/80 transition hover:bg-white/10 hover:text-white"
+          >
+            <ArrowLeft size={16} /> Volver
+          </button>
+
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-white/70">
+            <Sparkles size={12} className="text-[#2ed7ff]" />
+            Iniciar sesion
+          </div>
+        </div>
+
+        <div className="flex flex-1 items-center justify-center">
+          <section className="w-full max-w-md rounded-[30px] border border-white/10 bg-[#060606]/90 p-6 shadow-[0_30px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:p-8">
+            <div className="mb-8 space-y-4">
+              <div className="flex h-14 w-14 items-center justify-center rounded-[18px] border border-white/10 bg-[#0f1222] text-white">
+                <LockKeyhole size={22} className="text-[#5e92ff]" />
+              </div>
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+                <p className="mb-3 text-xs font-semibold uppercase tracking-[0.24em] text-[#2ed7ff]">turnow</p>
+                <h1 className="bg-[linear-gradient(135deg,#f5f5f5_0%,#5e92ff_52%,#f52ccf_100%)] bg-clip-text text-[2.3rem] font-bold tracking-[-0.05em] text-transparent sm:text-[2.7rem]">
+                  Accede a tu panel.
+                </h1>
+                <p className="mt-3 text-sm leading-7 text-[#a1a1aa]">
+                  Una entrada simple, oscura y enfocada, usando la misma energia visual de la landing.
+                </p>
+              </div>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-white">Email</label>
                 <input
                   type="email"
                   value={email}
-                  onChange={e => {
+                  onChange={(e) => {
                     setEmail(e.target.value);
                     setError('');
                   }}
-                  placeholder="tu@email.com"
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
+                  placeholder="tu@negocio.com"
+                  className="h-12 w-full rounded-2xl border border-white/10 bg-[#0d0d0d] px-4 text-sm text-white outline-none transition placeholder:text-[#717171] focus:border-[#5e92ff] focus:ring-4 focus:ring-[#5e92ff]/15"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Contrasena</label>
+
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-white">Contrasena</label>
                 <div className="relative">
                   <input
                     type={showPw ? 'text' : 'password'}
                     value={password}
-                    onChange={e => setPassword(e.target.value)}
+                    onChange={(e) => setPassword(e.target.value)}
                     placeholder="********"
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition pr-10"
+                    className="h-12 w-full rounded-2xl border border-white/10 bg-[#0d0d0d] px-4 pr-12 text-sm text-white outline-none transition placeholder:text-[#717171] focus:border-[#5e92ff] focus:ring-4 focus:ring-[#5e92ff]/15"
                   />
-                  <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                  <button
+                    type="button"
+                    onClick={() => setShowPw(!showPw)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#717171] transition hover:text-white"
+                  >
                     {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
               </div>
-              {error && <p className="text-sm text-red-500">{error}</p>}
+
+              {error && (
+                <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+                  {error}
+                </div>
+              )}
+
               <button
                 disabled={loading}
                 type="submit"
-                className="w-full py-2.5 bg-primary-600 text-white font-semibold rounded-xl hover:bg-primary-700 transition text-sm disabled:opacity-60"
+                className="inline-flex h-12 w-full items-center justify-center rounded-2xl bg-[#5e92ff] text-sm font-semibold text-white shadow-[0_16px_34px_rgba(94,146,255,0.28)] transition hover:bg-[#4f82ef] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {loading ? 'Ingresando...' : 'Iniciar sesion'}
               </button>
             </form>
 
-            <div className="mt-6 pt-6 border-t border-gray-100">
-              <p className="text-xs text-gray-400 text-center mb-3">Acceso rapido para pruebas</p>
-              <div className="grid grid-cols-3 gap-2">
-                {quickLogins.map((q, i) => (
+            <div className="mt-8 rounded-[24px] border border-white/10 bg-[#0d0d0d] p-5">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-white">Acceso rapido para pruebas</p>
+                  <p className="text-xs text-[#717171]">Todos usan la clave `demo123`.</p>
+                </div>
+                <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#f52ccf]">
+                  Demo
+                </div>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-3">
+                {quickLogins.map((item) => (
                   <button
-                    key={i}
-                    onClick={() => quickLogin(q.email)}
-                    className="py-2 px-2 text-xs font-medium bg-gray-50 hover:bg-primary-50 hover:text-primary-700 text-gray-600 rounded-lg transition border border-gray-100"
+                    key={item.email}
+                    onClick={() => quickLogin(item.email)}
+                    className="rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-center text-sm font-medium text-white/85 transition hover:border-[#5e92ff]/40 hover:bg-[#5e92ff]/10 hover:text-white"
                   >
-                    {q.label}
+                    {item.label}
                   </button>
                 ))}
               </div>
             </div>
-          </div>
-
-          <p className="text-center text-xs text-gray-400 mt-6">Contrasena demo para todos los usuarios: <span className="font-semibold">demo123</span></p>
+          </section>
         </div>
       </div>
     </div>

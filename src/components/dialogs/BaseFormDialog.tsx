@@ -9,6 +9,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 
 export interface FormField {
   id: string;
@@ -79,25 +81,22 @@ export const BaseFormDialog = ({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild={triggerAsChild}>
-        {children ? (
-          children
-        ) : (
-          <Button variant={triggerVariant}>{triggerLabel}</Button>
-        )}
+        {children ? children : <Button variant={triggerVariant}>{triggerLabel}</Button>}
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle className="animate-in fade-in slide-in-from-top-2 duration-500">{title}</DialogTitle>
-          {description && <DialogDescription className="animate-in fade-in slide-in-from-top-2 duration-500 delay-75">{description}</DialogDescription>}
+          <div className="eyebrow w-fit">Formulario</div>
+          <DialogTitle>{title}</DialogTitle>
+          {description && <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {fields.map((field, idx) => (
-            <div key={field.id} className={`space-y-2 animate-in fade-in slide-in-from-left-4 duration-500 delay-${idx * 75}`} style={{ animationDelay: `${idx * 75}ms` }}>
-              <label htmlFor={field.id} className="text-sm font-medium text-gray-700">
+          {fields.map((field) => (
+            <div key={field.id} className="space-y-2">
+              <Label htmlFor={field.id} className="flex items-center gap-1.5">
                 {field.label}
-                {field.required && <span className="text-red-500 ml-1">*</span>}
-              </label>
+                {field.required && <span className="text-[#f52ccf]">*</span>}
+              </Label>
 
               {field.type === "textarea" ? (
                 <textarea
@@ -106,7 +105,7 @@ export const BaseFormDialog = ({
                   value={formData[field.id] || ""}
                   onChange={(e) => handleChange(field.id, e.target.value)}
                   required={field.required}
-                  className="flex min-h-[80px] w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-gray-100 transition-all"
+                  className="flex min-h-[110px] w-full rounded-[22px] border border-white/10 bg-[#0d0d0d] px-4 py-3 text-sm text-white outline-none transition placeholder:text-[#717171] focus:border-[#5e92ff] focus:bg-[#0f111a] focus:ring-4 focus:ring-[#5e92ff]/15 disabled:cursor-not-allowed disabled:opacity-60"
                 />
               ) : field.type === "select" ? (
                 <select
@@ -114,42 +113,35 @@ export const BaseFormDialog = ({
                   value={formData[field.id] || ""}
                   onChange={(e) => handleChange(field.id, e.target.value)}
                   required={field.required}
-                  className="flex h-9 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-gray-100 transition-all"
+                  className="flex h-11 w-full rounded-[22px] border border-white/10 bg-[#0d0d0d] px-4 py-2 text-sm text-white outline-none transition focus:border-[#5e92ff] focus:bg-[#0f111a] focus:ring-4 focus:ring-[#5e92ff]/15 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  <option value="">Selecciona una opción</option>
+                  <option value="" className="bg-[#0d0d0d] text-[#a1a1aa]">
+                    Selecciona una opcion
+                  </option>
                   {field.options?.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
+                    <option key={opt.value} value={opt.value} className="bg-[#0d0d0d] text-white">
                       {opt.label}
                     </option>
                   ))}
                 </select>
               ) : (
-                <input
+                <Input
                   id={field.id}
                   type={field.type}
                   placeholder={field.placeholder}
                   value={formData[field.id] || ""}
                   onChange={(e) => handleChange(field.id, e.target.value)}
                   required={field.required}
-                  className="flex h-9 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-gray-100 transition-all"
                 />
               )}
             </div>
           ))}
 
-          <DialogFooter className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-500">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setOpen(false)}
-              disabled={submitting || isLoading}
-            >
+          <DialogFooter className="border-t border-white/10 pt-4">
+            <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={submitting || isLoading}>
               {cancelLabel}
             </Button>
-            <Button
-              type="submit"
-              disabled={submitting || isLoading}
-            >
+            <Button type="submit" disabled={submitting || isLoading}>
               {submitting || isLoading ? "Guardando..." : submitLabel}
             </Button>
           </DialogFooter>

@@ -3,6 +3,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -26,15 +27,9 @@ interface EditTenantDialogProps {
   isLoading?: boolean;
 }
 
-export const EditTenantDialog: React.FC<EditTenantDialogProps> = ({
-  tenant,
-  onSave,
-  isLoading = false,
-}) => {
+export const EditTenantDialog: React.FC<EditTenantDialogProps> = ({ tenant, onSave, isLoading = false }) => {
   const [open, setOpen] = React.useState(false);
-  const [primaryColor, setPrimaryColor] = React.useState(
-    tenant.primaryColor || "#6366f1"
-  );
+  const [primaryColor, setPrimaryColor] = React.useState(tenant.primaryColor || "#5e92ff");
   const [formData, setFormData] = React.useState({
     name: tenant.name,
     email: tenant.email,
@@ -43,9 +38,8 @@ export const EditTenantDialog: React.FC<EditTenantDialogProps> = ({
     slug: tenant.slug,
   });
 
-  // Sincronizar el estado local cuando el tenant cambia
   React.useEffect(() => {
-    setPrimaryColor(tenant.primaryColor || "#6366f1");
+    setPrimaryColor(tenant.primaryColor || "#5e92ff");
     setFormData({
       name: tenant.name,
       email: tenant.email,
@@ -62,8 +56,9 @@ export const EditTenantDialog: React.FC<EditTenantDialogProps> = ({
       phone: formData.phone,
       address: formData.address,
       slug: formData.slug,
-      primaryColor: primaryColor,
+      primaryColor,
     });
+    setOpen(false);
   };
 
   return (
@@ -71,115 +66,62 @@ export const EditTenantDialog: React.FC<EditTenantDialogProps> = ({
       <DialogTrigger asChild>
         <Button>Editar datos</Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[560px]">
         <DialogHeader>
-          <DialogTitle>Editar información del negocio</DialogTitle>
-          <DialogDescription>
-            Actualiza los datos de tu negocio
-          </DialogDescription>
+          <div className="eyebrow w-fit">Configuracion</div>
+          <DialogTitle>Editar informacion del negocio</DialogTitle>
+          <DialogDescription>Actualiza los datos visibles de tu negocio y define el color principal del tema.</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
-          {/* Nombre */}
+        <div className="space-y-4 py-2">
           <div className="space-y-2">
             <Label htmlFor="name">Nombre del negocio</Label>
-            <Input
-              id="name"
-              placeholder="Mi Negocio"
-              value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
-              disabled={isLoading}
-            />
+            <Input id="name" placeholder="Mi Negocio" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} disabled={isLoading} />
           </div>
 
-          {/* Email */}
           <div className="space-y-2">
             <Label htmlFor="email">Email del negocio</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="info@mynegocio.com"
-              value={formData.email}
-              onChange={(e) =>
-                setFormData({ ...formData, email: e.target.value })
-              }
-              disabled={isLoading}
-            />
+            <Input id="email" type="email" placeholder="info@minegocio.com" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} disabled={isLoading} />
           </div>
 
-          {/* Teléfono */}
           <div className="space-y-2">
-            <Label htmlFor="phone">Teléfono</Label>
-            <Input
-              id="phone"
-              placeholder="+54 9 11 1234-5678"
-              value={formData.phone}
-              onChange={(e) =>
-                setFormData({ ...formData, phone: e.target.value })
-              }
-              disabled={isLoading}
-            />
+            <Label htmlFor="phone">Telefono</Label>
+            <Input id="phone" placeholder="+54 9 11 1234-5678" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} disabled={isLoading} />
           </div>
 
-          {/* Dirección */}
           <div className="space-y-2">
-            <Label htmlFor="address">Dirección</Label>
-            <Input
-              id="address"
-              placeholder="Calle Principal 123, Piso 4"
-              value={formData.address}
-              onChange={(e) =>
-                setFormData({ ...formData, address: e.target.value })
-              }
-              disabled={isLoading}
-            />
+            <Label htmlFor="address">Direccion</Label>
+            <Input id="address" placeholder="Calle Principal 123, Piso 4" value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} disabled={isLoading} />
           </div>
 
-          {/* Slug */}
           <div className="space-y-2">
-            <Label htmlFor="slug">URL pública (slug)</Label>
-            <Input
-              id="slug"
-              placeholder="mi-negocio"
-              value={formData.slug}
-              onChange={(e) =>
-                setFormData({ ...formData, slug: e.target.value })
-              }
-              disabled={isLoading}
-            />
+            <Label htmlFor="slug">URL publica (slug)</Label>
+            <Input id="slug" placeholder="mi-negocio" value={formData.slug} onChange={(e) => setFormData({ ...formData, slug: e.target.value })} disabled={isLoading} />
           </div>
 
-          {/* Color Picker Button */}
-          <div className="space-y-2">
+          <div className="rounded-[22px] border border-white/10 bg-white/5 p-4">
             <Label>Color primario</Label>
-            <div className="flex items-center gap-3">
+            <div className="mt-3 flex items-center gap-3">
               <EditTenantColorDialog
                 initialColor={primaryColor}
                 onSave={(color) => setPrimaryColor(color)}
                 isLoading={isLoading}
-                triggerAsButton={true}
-                colorCircle={true}
+                triggerAsButton
+                colorCircle
               />
-              <span className="text-sm text-gray-600">{primaryColor}</span>
+              <span className="text-sm font-medium text-[#a1a1aa]">{primaryColor}</span>
             </div>
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="flex gap-2 justify-end pt-4 border-t">
-          <Button
-            variant="outline"
-            onClick={() => setOpen(false)}
-            disabled={isLoading}
-          >
+        <DialogFooter className="border-t border-white/10 pt-4">
+          <Button variant="outline" onClick={() => setOpen(false)} disabled={isLoading}>
             Cancelar
           </Button>
           <Button onClick={handleSaveData} disabled={isLoading}>
             {isLoading ? "Guardando..." : "Guardar cambios"}
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

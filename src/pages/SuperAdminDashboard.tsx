@@ -1,20 +1,50 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Building2, Users, CalendarDays, DollarSign, Activity, Search, Eye, Pause, Trash2, LogOut, BarChart3, Settings, Bell, Menu, X } from 'lucide-react';
+import {
+  Activity,
+  BarChart3,
+  Bell,
+  Building2,
+  CalendarDays,
+  DollarSign,
+  Eye,
+  Layers3,
+  LogOut,
+  Menu,
+  Pause,
+  Search,
+  Settings,
+  Trash2,
+  Users,
+  X,
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import MetricCard from '../components/ui/MetricCard';
 import StatusBadge from '../components/ui/StatusBadge';
 import { useAuth } from '../context/AuthContext';
+import { CreateTenantDialog } from '../components/dialogs/CreateTenantDialog';
+import { ConfirmDeleteDialog } from '../components/dialogs/ConfirmDeleteDialog';
 import { api, type ApiGlobalOverview, type ApiTenant } from '../lib/api';
+
+type Tab = 'overview' | 'tenants' | 'plans';
+
+const navItems: { id: Tab; label: string; icon: React.ReactNode; caption: string }[] = [
+  { id: 'overview', label: 'Dashboard', icon: <BarChart3 size={18} />, caption: 'Vista general' },
+  { id: 'tenants', label: 'Clientes', icon: <Building2 size={18} />, caption: 'Base activa' },
+  { id: 'plans', label: 'Planes', icon: <Layers3 size={18} />, caption: 'Monetizacion' },
+];
 
 export default function SuperAdminDashboard() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState<'overview' | 'tenants' | 'plans'>('overview');
+  const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [search, setSearch] = useState('');
   const [selectedTenant, setSelectedTenant] = useState<ApiTenant | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [creatingTenant, setCreatingTenant] = useState(false);
+  const [tenantToDelete, setTenantToDelete] = useState<ApiTenant | null>(null);
+  const [deletingTenant, setDeletingTenant] = useState(false);
 
   const [metrics, setMetrics] = useState<ApiGlobalOverview | null>(null);
   const [tenants, setTenants] = useState<ApiTenant[]>([]);
@@ -45,17 +75,24 @@ export default function SuperAdminDashboard() {
     navigate('/', { replace: true });
   };
 
-  const createTenant = async () => {
-    const name = prompt('Nombre del negocio:');
-    if (!name) return;
-    const email = prompt('Email:') || '';
-    const phone = prompt('Telefono:') || '';
-    const address = prompt('Direccion:') || '';
-    const slug = (prompt('Slug publico:', name.toLowerCase().replace(/\s+/g, '-')) || '').trim();
-    const plan = (prompt('Plan (BASIC, PROFESSIONAL, PREMIUM):', 'BASIC') || 'BASIC').toUpperCase();
-
-    await api.createTenant({ name, email, phone, address, slug, plan });
-    await loadData();
+  const handleCreateTenant = async (data: { name: string; email: string; phone: string; address: string; slug: string; plan: string }) => {
+    try {
+      setCreatingTenant(true);
+      await api.createTenant({
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        address: data.address,
+        slug: data.slug,
+        plan: data.plan,
+      });
+      await loadData();
+      setError('');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al crear el cliente');
+    } finally {
+      setCreatingTenant(false);
+    }
   };
 
   const toggleStatus = async (tenant: ApiTenant) => {
@@ -64,186 +101,303 @@ export default function SuperAdminDashboard() {
     await loadData();
   };
 
-  const removeTenant = async (tenant: ApiTenant) => {
-    if (!confirm(`Eliminar ${tenant.name}?`)) return;
-    await api.deleteTenant(tenant.id);
-    await loadData();
+  const handleRemoveTenant = async () => {
+    if (!tenantToDelete) return;
+
+    try {
+      setDeletingTenant(true);
+      await api.deleteTenant(tenantToDelete.id);
+      await loadData();
+      setError('');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al eliminar el cliente');
+    } finally {
+      setDeletingTenant(false);
+      setTenantToDelete(null);
+    }
   };
 
-  const navItems = [
-    { id: 'overview' as const, label: 'Dashboard', icon: <BarChart3 size={18} /> },
-    { id: 'tenants' as const, label: 'Clientes', icon: <Building2 size={18} /> },
-    { id: 'plans' as const, label: 'Planes', icon: <DollarSign size={18} /> },
-  ];
-
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      <aside className={`fixed inset-y-0 left-0 z-40 w-64 bg-gray-900 text-white transform transition-transform lg:translate-x-0 lg:static ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <div className="p-5 border-b border-gray-800">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center"><Activity size={16} /></div>
-              <div><p className="font-bold text-sm">turnow</p><p className="text-xs text-gray-400">Super Admin</p></div>
+    <div className="app-shell min-h-screen px-4 py-5 sm:px-6 lg:px-8">
+      <div className="mx-auto flex min-h-[calc(100vh-2.5rem)] max-w-7xl gap-6">
+        <aside
+          className={`panel-dark fixed inset-y-5 left-4 z-40 w-[290px] px-5 py-5 transition-transform lg:static lg:translate-x-0 ${
+            sidebarOpen ? 'translate-x-0' : '-translate-x-[120%]'
+          }`}
+        >
+          <div className="flex h-full flex-col">
+            <div className="mb-6 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-[18px] bg-[#0f1222] text-[#5e92ff]">
+                  <Activity size={18} />
+                </div>
+                <div>
+                  <p className="font-['Space_Grotesk'] text-xl font-bold tracking-[-0.05em] text-white">turnow</p>
+                  <p className="text-xs uppercase tracking-[0.22em] text-stone-400">super admin</p>
+                </div>
+              </div>
+              <button className="text-stone-300 lg:hidden" onClick={() => setSidebarOpen(false)}>
+                <X size={20} />
+              </button>
             </div>
-            <button className="lg:hidden" onClick={() => setSidebarOpen(false)}><X size={20} /></button>
-          </div>
-        </div>
-        <nav className="p-3 space-y-1">
-          {navItems.map((item) => (
-            <button key={item.id} onClick={() => { setActiveTab(item.id); setSidebarOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${activeTab === item.id ? 'bg-primary-600 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-800'}`}>
-              {item.icon} {item.label}
-            </button>
-          ))}
-        </nav>
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-800">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center text-xs font-bold">{user?.name?.[0]}</div>
-            <div className="flex-1 min-w-0"><p className="text-sm font-medium truncate">{user?.name}</p><p className="text-xs text-gray-400 truncate">{user?.email}</p></div>
-          </div>
-          <button onClick={handleLogout} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition"><LogOut size={16} /> Cerrar sesion</button>
-        </div>
-      </aside>
 
-      {sidebarOpen && <div className="fixed inset-0 bg-black/50 z-30 lg:hidden" onClick={() => setSidebarOpen(false)} />}
-
-      <div className="flex-1 min-w-0">
-        <header className="bg-white border-b border-gray-100 px-4 sm:px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button className="lg:hidden" onClick={() => setSidebarOpen(true)}><Menu size={20} /></button>
-            <h1 className="text-lg font-bold text-gray-900">
-              {activeTab === 'overview' && 'Dashboard Global'}
-              {activeTab === 'tenants' && 'Gestion de Clientes'}
-              {activeTab === 'plans' && 'Planes de Suscripcion'}
-            </h1>
-          </div>
-          <div className="flex items-center gap-3">
-            <button className="p-2 hover:bg-gray-50 rounded-lg relative"><Bell size={18} className="text-gray-500" /></button>
-            <button className="p-2 hover:bg-gray-50 rounded-lg"><Settings size={18} className="text-gray-500" /></button>
-          </div>
-        </header>
-
-        <main className="p-4 sm:p-6">
-          {loading && <p className="text-gray-500">Cargando...</p>}
-          {error && <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">{error}</div>}
-
-          {!loading && metrics && activeTab === 'overview' && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <MetricCard title="Total Clientes" value={metrics.totalTenants} icon={<Building2 size={20} />} />
-                <MetricCard title="Clientes Activos" value={metrics.activeTenants} icon={<Users size={20} />} />
-                <MetricCard title="Turnos Totales" value={metrics.totalAppointments.toLocaleString()} icon={<CalendarDays size={20} />} />
-                <MetricCard title="Ingresos MRR" value={`$${metrics.totalRevenue.toLocaleString()}`} icon={<DollarSign size={20} />} />
-              </div>
-
-              <div className="bg-white rounded-2xl border border-gray-100 p-5">
-                <h3 className="font-semibold text-gray-900 mb-4">Ultimos Clientes</h3>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-left text-gray-500 border-b border-gray-100">
-                        <th className="pb-3 font-medium">Negocio</th>
-                        <th className="pb-3 font-medium">Plan</th>
-                        <th className="pb-3 font-medium">Estado</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {tenants.slice(0, 6).map((t) => (
-                        <tr key={t.id} className="border-b border-gray-50">
-                          <td className="py-3 font-medium text-gray-900">{t.name}</td>
-                          <td className="py-3"><StatusBadge status={t.plan} /></td>
-                          <td className="py-3"><StatusBadge status={t.status} /></td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+            <div className="mb-6 rounded-[26px] border border-white/10 bg-white/5 p-4">
+              <p className="text-xs uppercase tracking-[0.2em] text-stone-400">Estado plataforma</p>
+              <p className="mt-3 font-['Space_Grotesk'] text-3xl font-bold tracking-[-0.05em] text-white">
+                {metrics?.activeTenants ?? '--'}
+              </p>
+              <p className="mt-2 text-sm text-stone-300">clientes activos operando hoy</p>
             </div>
-          )}
 
-          {!loading && activeTab === 'tenants' && (
-            <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-                <div className="relative w-full sm:w-80">
-                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input type="text" placeholder="Buscar cliente..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
-                </div>
-                <button onClick={createTenant} className="px-4 py-2.5 bg-primary-600 text-white text-sm font-medium rounded-xl hover:bg-primary-700 transition">+ Nuevo Cliente</button>
-              </div>
-
-              <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-left text-gray-500 bg-gray-50">
-                        <th className="px-5 py-3 font-medium">Negocio</th>
-                        <th className="px-5 py-3 font-medium hidden sm:table-cell">Email</th>
-                        <th className="px-5 py-3 font-medium">Plan</th>
-                        <th className="px-5 py-3 font-medium">Estado</th>
-                        <th className="px-5 py-3 font-medium">Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredTenants.map((t) => (
-                        <tr key={t.id} className="border-t border-gray-50 hover:bg-gray-50 transition">
-                          <td className="px-5 py-4"><p className="font-medium text-gray-900">{t.name}</p></td>
-                          <td className="px-5 py-4 text-gray-500 hidden sm:table-cell">{t.email}</td>
-                          <td className="px-5 py-4"><StatusBadge status={t.plan} /></td>
-                          <td className="px-5 py-4"><StatusBadge status={t.status} /></td>
-                          <td className="px-5 py-4">
-                            <div className="flex items-center gap-1">
-                              <button onClick={() => setSelectedTenant(t)} className="p-1.5 hover:bg-gray-100 rounded-lg transition" title="Ver detalle"><Eye size={15} className="text-gray-500" /></button>
-                              <button onClick={() => toggleStatus(t)} className="p-1.5 hover:bg-gray-100 rounded-lg transition" title="Suspender/Activar"><Pause size={15} className="text-gray-500" /></button>
-                              <button onClick={() => removeTenant(t)} className="p-1.5 hover:bg-red-50 rounded-lg transition" title="Eliminar"><Trash2 size={15} className="text-red-400" /></button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {selectedTenant && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setSelectedTenant(null)}>
-                  <div className="bg-white rounded-2xl max-w-lg w-full p-6" onClick={(e) => e.stopPropagation()}>
-                    <div className="flex items-center justify-between mb-6">
-                      <h3 className="text-lg font-bold text-gray-900">{selectedTenant.name}</h3>
-                      <button onClick={() => setSelectedTenant(null)} className="p-2 hover:bg-gray-100 rounded-lg"><X size={18} /></button>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div><p className="text-gray-500">Email</p><p className="font-medium text-gray-900">{selectedTenant.email}</p></div>
-                      <div><p className="text-gray-500">Telefono</p><p className="font-medium text-gray-900">{selectedTenant.phone}</p></div>
-                      <div><p className="text-gray-500">Direccion</p><p className="font-medium text-gray-900">{selectedTenant.address}</p></div>
-                      <div><p className="text-gray-500">Slug</p><p className="font-medium text-gray-900">{selectedTenant.slug}</p></div>
-                      <div><p className="text-gray-500">Plan</p><StatusBadge status={selectedTenant.plan} size="md" /></div>
-                      <div><p className="text-gray-500">Estado</p><StatusBadge status={selectedTenant.status} size="md" /></div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {!loading && metrics && activeTab === 'plans' && (
-            <div className="grid sm:grid-cols-3 gap-4">
-              {[
-                { plan: 'BASIC', price: '$19.99', clients: metrics.activePlans.basic },
-                { plan: 'PROFESSIONAL', price: '$49.99', clients: metrics.activePlans.professional },
-                { plan: 'PREMIUM', price: '$99.99', clients: metrics.activePlans.premium },
-              ].map((p) => (
-                <div key={p.plan} className="bg-white rounded-2xl border p-5">
-                  <div className="flex items-center justify-between mb-4">
-                    <StatusBadge status={p.plan} size="md" />
-                    <span className="text-xl font-bold text-gray-900">{p.price}</span>
-                  </div>
-                  <p className="text-sm text-gray-600">Clientes activos: <span className="font-semibold text-gray-900">{p.clients}</span></p>
-                  <button className="mt-4 w-full py-2 text-sm font-medium border border-gray-200 rounded-xl hover:bg-gray-50 transition">Editar Plan</button>
-                </div>
+            <nav className="space-y-2">
+              {navItems.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    setActiveTab(item.id);
+                    setSidebarOpen(false);
+                  }}
+                  className={`flex w-full items-center gap-3 rounded-[22px] px-4 py-3 text-left transition ${
+                    activeTab === item.id ? 'bg-[#5e92ff]/14 text-white' : 'bg-white/0 text-stone-300 hover:bg-white/8 hover:text-white'
+                  }`}
+                >
+                  <span>{item.icon}</span>
+                  <span className="flex-1">
+                    <span className="block text-sm font-semibold">{item.label}</span>
+                    <span className={`block text-xs ${activeTab === item.id ? 'text-[#9ac0ff]' : 'text-stone-500'}`}>{item.caption}</span>
+                  </span>
+                </button>
               ))}
+            </nav>
+
+            <div className="mt-auto rounded-[26px] border border-white/10 bg-white/5 p-4">
+              <div className="mb-4 flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-sm font-bold text-white">
+                  {user?.name?.[0] || 'A'}
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-white">{user?.name}</p>
+                  <p className="truncate text-xs text-stone-400">{user?.email}</p>
+                </div>
+              </div>
+              <button onClick={handleLogout} className="button-ghost-luxe w-full rounded-2xl border-white/10 bg-white/0 text-stone-200 hover:bg-white/10 hover:text-white">
+                <LogOut size={16} /> Cerrar sesion
+              </button>
             </div>
-          )}
-        </main>
+          </div>
+        </aside>
+
+        {sidebarOpen && <div className="fixed inset-0 z-30 bg-black/55 lg:hidden" onClick={() => setSidebarOpen(false)} />}
+
+        <div className="min-w-0 flex-1">
+          <header className="panel-light mb-6 flex flex-col gap-4 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <button className="button-ghost-luxe h-11 w-11 rounded-full p-0 lg:hidden" onClick={() => setSidebarOpen(true)}>
+                <Menu size={18} />
+              </button>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#2ed7ff]">Control global</p>
+                <h1 className="font-['Space_Grotesk'] text-3xl font-bold tracking-[-0.05em] text-white">
+                  {navItems.find((item) => item.id === activeTab)?.label}
+                </h1>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button className="button-ghost-luxe h-11 w-11 rounded-full p-0">
+                <Bell size={18} />
+              </button>
+              <button className="button-ghost-luxe h-11 w-11 rounded-full p-0">
+                <Settings size={18} />
+              </button>
+            </div>
+          </header>
+
+          <main className="space-y-6">
+            {loading && <p className="text-[#a1a1aa]">Cargando...</p>}
+            {error && <div className="rounded-[24px] border border-rose-400/20 bg-rose-400/10 px-4 py-3 text-sm text-rose-200">{error}</div>}
+
+            {!loading && metrics && activeTab === 'overview' && (
+              <div className="space-y-6">
+                <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                  <MetricCard title="Total clientes" value={metrics.totalTenants} icon={<Building2 size={20} />} />
+                  <MetricCard title="Clientes activos" value={metrics.activeTenants} icon={<Users size={20} />} />
+                  <MetricCard title="Turnos totales" value={metrics.totalAppointments.toLocaleString()} icon={<CalendarDays size={20} />} />
+                  <MetricCard title="MRR estimado" value={`$${metrics.totalRevenue.toLocaleString()}`} icon={<DollarSign size={20} />} />
+                </section>
+
+                <section className="grid gap-6 xl:grid-cols-[1.3fr_0.7fr]">
+                  <div className="panel-light p-6">
+                    <div className="mb-5 flex items-center justify-between">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#2ed7ff]">Actividad reciente</p>
+                        <h2 className="mt-2 font-['Space_Grotesk'] text-2xl font-bold tracking-[-0.05em] text-white">Ultimos clientes incorporados</h2>
+                      </div>
+                      <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-[#a1a1aa]">
+                        {tenants.length} cuentas
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      {tenants.slice(0, 6).map((tenant) => (
+                        <div key={tenant.id} className="soft-card flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+                          <div>
+                            <p className="text-base font-semibold text-white">{tenant.name}</p>
+                            <p className="mt-1 text-sm text-[#a1a1aa]">{tenant.email}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <StatusBadge status={tenant.plan} />
+                            <StatusBadge status={tenant.status} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </section>
+              </div>
+            )}
+
+            {!loading && activeTab === 'tenants' && (
+              <div className="space-y-4">
+                <div className="panel-light flex flex-col gap-4 px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="relative w-full sm:max-w-md">
+                    <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#717171]" />
+                    <input
+                      type="text"
+                      placeholder="Buscar cliente..."
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      className="input-luxe pl-11"
+                    />
+                  </div>
+                  <CreateTenantDialog onSave={handleCreateTenant} isLoading={creatingTenant} />
+                </div>
+
+                <div className="panel-light overflow-hidden p-2">
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[740px] text-sm">
+                      <thead>
+                        <tr className="text-left text-[#2ed7ff]">
+                          <th className="px-4 py-4 font-semibold uppercase tracking-[0.16em]">Negocio</th>
+                          <th className="px-4 py-4 font-semibold uppercase tracking-[0.16em]">Email</th>
+                          <th className="px-4 py-4 font-semibold uppercase tracking-[0.16em]">Plan</th>
+                          <th className="px-4 py-4 font-semibold uppercase tracking-[0.16em]">Estado</th>
+                          <th className="px-4 py-4 font-semibold uppercase tracking-[0.16em]">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredTenants.map((tenant) => (
+                          <tr key={tenant.id} className="border-t border-white/10">
+                            <td className="px-4 py-4">
+                              <p className="font-semibold text-white">{tenant.name}</p>
+                            </td>
+                            <td className="px-4 py-4 text-[#a1a1aa]">{tenant.email}</td>
+                            <td className="px-4 py-4">
+                              <StatusBadge status={tenant.plan} />
+                            </td>
+                            <td className="px-4 py-4">
+                              <StatusBadge status={tenant.status} />
+                            </td>
+                            <td className="px-4 py-4">
+                              <div className="flex items-center gap-2">
+                                <button onClick={() => setSelectedTenant(tenant)} className="button-ghost-luxe h-10 w-10 rounded-full p-0" title="Ver detalle">
+                                  <Eye size={15} />
+                                </button>
+                                <button onClick={() => toggleStatus(tenant)} className="button-ghost-luxe h-10 w-10 rounded-full p-0" title="Suspender o activar">
+                                  <Pause size={15} />
+                                </button>
+                                <ConfirmDeleteDialog
+                                  description={`Estas seguro de que deseas eliminar el cliente "${tenant.name}"? Esta accion no se puede deshacer.`}
+                                  onConfirm={handleRemoveTenant}
+                                  isLoading={deletingTenant}
+                                >
+                                  <button className="flex h-10 w-10 items-center justify-center rounded-full border border-rose-400/20 bg-rose-400/10 text-rose-200 transition hover:bg-rose-400/20" title="Eliminar" onClick={() => setTenantToDelete(tenant)}>
+                                    <Trash2 size={15} />
+                                  </button>
+                                </ConfirmDeleteDialog>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {selectedTenant && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4" onClick={() => setSelectedTenant(null)}>
+                    <div className="panel-light w-full max-w-xl p-6" onClick={(e) => e.stopPropagation()}>
+                      <div className="mb-6 flex items-start justify-between">
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#2ed7ff]">Perfil cliente</p>
+                          <h3 className="mt-2 font-['Space_Grotesk'] text-3xl font-bold tracking-[-0.05em] text-white">{selectedTenant.name}</h3>
+                        </div>
+                        <button onClick={() => setSelectedTenant(null)} className="button-ghost-luxe h-11 w-11 rounded-full p-0">
+                          <X size={18} />
+                        </button>
+                      </div>
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        {[
+                          ['Email', selectedTenant.email],
+                          ['Telefono', selectedTenant.phone],
+                          ['Direccion', selectedTenant.address],
+                          ['Slug', selectedTenant.slug],
+                          ['Fecha de alta', selectedTenant.createdAt ? new Date(selectedTenant.createdAt).toLocaleDateString() : '-'],
+                        ].map(([label, value]) => (
+                          <div key={label} className="soft-card p-4">
+                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#2ed7ff]">{label}</p>
+                            <p className="mt-2 text-sm font-semibold text-white">{value || '-'}</p>
+                          </div>
+                        ))}
+                        <div className="soft-card p-4">
+                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#2ed7ff]">Plan</p>
+                          <div className="mt-3">
+                            <StatusBadge status={selectedTenant.plan} size="md" />
+                          </div>
+                        </div>
+                        <div className="soft-card p-4">
+                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#2ed7ff]">Estado</p>
+                          <div className="mt-3">
+                            <StatusBadge status={selectedTenant.status} size="md" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {!loading && metrics && activeTab === 'plans' && (
+              <div className="grid gap-4 lg:grid-cols-3">
+                {[
+                  { plan: 'BASIC', price: '$19.99', clients: metrics.activePlans.basic, copy: 'Entrada prolija para equipos chicos.' },
+                  { plan: 'PROFESSIONAL', price: '$49.99', clients: metrics.activePlans.professional, copy: 'Balance entre operacion, control y crecimiento.' },
+                  { plan: 'PREMIUM', price: '$99.99', clients: metrics.activePlans.premium, copy: 'Capa mas alta para marcas con multiples frentes.' },
+                ].map((item, index) => (
+                  <div key={item.plan} className={index === 1 ? 'panel-dark p-6' : 'panel-light p-6'}>
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <StatusBadge status={item.plan} size="md" />
+                        <p className={`mt-4 text-sm leading-7 ${index === 1 ? 'text-stone-300' : 'text-[#a1a1aa]'}`}>{item.copy}</p>
+                      </div>
+                      <span className={`font-['Space_Grotesk'] text-3xl font-bold tracking-[-0.05em] ${index === 1 ? 'text-white' : 'text-white'}`}>
+                        {item.price}
+                      </span>
+                    </div>
+                    <div className={`mt-8 rounded-[24px] border p-4 ${index === 1 ? 'border-white/10 bg-white/5 text-stone-200' : 'border-white/10 bg-white/5 text-white'}`}>
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] opacity-70">Clientes activos</p>
+                      <p className="mt-3 font-['Space_Grotesk'] text-3xl font-bold tracking-[-0.05em]">{item.clients}</p>
+                    </div>
+                    <button className={`mt-6 w-full rounded-2xl py-3 text-sm font-semibold transition ${index === 1 ? 'bg-white text-[#17171a] hover:bg-[#f4f4f5]' : 'border border-white/10 bg-white/5 text-white hover:bg-white/10'}`}>
+                      Editar plan
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </main>
+        </div>
       </div>
     </div>
   );

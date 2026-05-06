@@ -4,16 +4,16 @@ interface Props {
 }
 
 const colors: Record<string, string> = {
-  ACTIVE: 'bg-emerald-100 text-emerald-700',
-  BOOKED: 'bg-blue-100 text-blue-700',
-  COMPLETED: 'bg-emerald-100 text-emerald-700',
-  CANCELLED: 'bg-red-100 text-red-700',
-  NO_SHOW: 'bg-amber-100 text-amber-700',
-  SUSPENDED: 'bg-red-100 text-red-700',
-  PENDING: 'bg-amber-100 text-amber-700',
-  BASIC: 'bg-gray-100 text-gray-700',
-  PROFESSIONAL: 'bg-blue-100 text-blue-700',
-  PREMIUM: 'bg-purple-100 text-purple-700',
+  ACTIVE: 'border-emerald-400/20 bg-emerald-400/10 text-emerald-200',
+  BOOKED: 'border-sky-400/20 bg-sky-400/10 text-sky-200',
+  COMPLETED: 'border-emerald-400/20 bg-emerald-400/10 text-emerald-200',
+  CANCELLED: 'border-rose-400/20 bg-rose-400/10 text-rose-200',
+  NO_SHOW: 'border-amber-400/20 bg-amber-400/10 text-amber-200',
+  SUSPENDED: 'border-white/[0.12] bg-white/[0.06] text-zinc-300',
+  PENDING: 'border-amber-400/20 bg-amber-400/10 text-amber-200',
+  BASIC: 'border-white/[0.12] bg-white/[0.06] text-zinc-300',
+  PROFESSIONAL: 'border-[#5e92ff]/25 bg-[#5e92ff]/12 text-[#bfd0ff]',
+  PREMIUM: 'border-[#f52ccf]/20 bg-[#f52ccf]/10 text-[#ffb8f0]',
 };
 
 const labels: Record<string, string> = {
@@ -21,18 +21,23 @@ const labels: Record<string, string> = {
   BOOKED: 'Reservado',
   COMPLETED: 'Completado',
   CANCELLED: 'Cancelado',
-  NO_SHOW: 'No asistió',
+  NO_SHOW: 'No show',
   SUSPENDED: 'Suspendido',
   PENDING: 'Pendiente',
-  BASIC: 'Básico',
+  BASIC: 'Basico',
   PROFESSIONAL: 'Profesional',
   PREMIUM: 'Premium',
 };
 
 export default function StatusBadge({ status, size = 'sm' }: Props) {
-  const sizeClass = size === 'sm' ? 'text-xs px-2 py-0.5' : 'text-sm px-3 py-1';
+  const sizeClass = size === 'sm' ? 'px-2.5 py-1 text-[11px]' : 'px-3 py-1.5 text-xs';
+
   return (
-    <span className={`inline-flex items-center rounded-full font-medium ${sizeClass} ${colors[status] || 'bg-gray-100 text-gray-700'}`}>
+    <span
+      className={`inline-flex items-center rounded-full border font-semibold uppercase tracking-[0.16em] ${sizeClass} ${
+        colors[status] || 'border-white/[0.12] bg-white/[0.06] text-zinc-300'
+      }`}
+    >
       {labels[status] || status}
     </span>
   );

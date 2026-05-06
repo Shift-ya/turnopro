@@ -1,5 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Clock, ArrowLeft, ArrowRight, CheckCircle2, User, Mail, Phone, ChevronLeft, ChevronRight, MapPin } from 'lucide-react';
+import {
+  ArrowLeft,
+  ArrowRight,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Mail,
+  MapPin,
+  Phone,
+  ShieldCheck,
+  User,
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { api, type ApiProfessional, type ApiService, type PublicTenant } from '../lib/api';
 import { useToast } from '../hooks/useToast';
@@ -15,6 +27,24 @@ function toIsoDate(d: Date) {
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
 }
+
+const stepMeta: Record<Step, { label: string; title: string; description: string }> = {
+  1: {
+    label: 'Servicio',
+    title: 'Define la experiencia',
+    description: 'Selecciona el servicio y el profesional indicado para tu visita.',
+  },
+  2: {
+    label: 'Agenda',
+    title: 'Elige el mejor momento',
+    description: 'Consulta la agenda disponible y confirma fecha y hora.',
+  },
+  3: {
+    label: 'Datos',
+    title: 'Finaliza tu reserva',
+    description: 'Solo faltan tus datos para dejar el turno confirmado.',
+  },
+};
 
 export default function PublicBooking() {
   const navigate = useNavigate();
@@ -36,7 +66,6 @@ export default function PublicBooking() {
   const [clientName, setClientName] = useState('');
   const [clientEmail, setClientEmail] = useState('');
   const [clientPhone, setClientPhone] = useState('');
-
   const [calDate, setCalDate] = useState(new Date());
 
   useEffect(() => {
@@ -55,11 +84,13 @@ export default function PublicBooking() {
         setLoading(false);
       }
     };
+
     load();
   }, []);
 
   useEffect(() => {
     if (!selectedService) return;
+
     api.getPublicProfessionals(DEMO_SLUG, selectedService.id)
       .then(setProfessionals)
       .catch((e) => setError(e instanceof Error ? e.message : 'No se pudieron cargar profesionales'));
@@ -67,13 +98,14 @@ export default function PublicBooking() {
 
   useEffect(() => {
     if (!selectedService || !selectedProfessional || !selectedDate) return;
+
     const date = toIsoDate(selectedDate);
     api.getPublicSlots(DEMO_SLUG, selectedProfessional.id, selectedService.id, date)
-      .then((r) => {
+      .then((response) => {
         setTimeSlots(
-          r.slots
-            .filter((s) => s.available)
-            .map((s) => s.startTime.slice(0, 5))
+          response.slots
+            .filter((slot) => slot.available)
+            .map((slot) => slot.startTime.slice(0, 5)),
         );
       })
       .catch((e) => setError(e instanceof Error ? e.message : 'No se pudieron cargar horarios'));
@@ -97,7 +129,6 @@ export default function PublicBooking() {
       });
 
       success(TOAST_MESSAGES.appointment.createSuccess);
-
       setStep(1);
       setSelectedService(null);
       setSelectedProfessional(null);
@@ -117,7 +148,6 @@ export default function PublicBooking() {
   };
 
   const categories = useMemo(() => [...new Set(services.map((s) => s.category || 'General'))], [services]);
-
   const calYear = calDate.getFullYear();
   const calMonth = calDate.getMonth();
   const today = new Date();
@@ -129,187 +159,359 @@ export default function PublicBooking() {
   const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
   const isDayAvailable = (day: number) => {
-    const d = new Date(calYear, calMonth, day);
-    d.setHours(0, 0, 0, 0);
-    return d >= today;
+    const date = new Date(calYear, calMonth, day);
+    date.setHours(0, 0, 0, 0);
+    return date >= today;
   };
 
   if (loading) {
-    return <div className="min-h-screen grid place-items-center text-gray-500">Cargando reserva...</div>;
+    return <div className="app-shell grid min-h-screen place-items-center text-[#a1a1aa]">Cargando reserva...</div>;
   }
 
   if (!tenant) {
-    return <div className="min-h-screen grid place-items-center text-red-500">{error || 'Tenant no disponible'}</div>;
+    return <div className="app-shell grid min-h-screen place-items-center text-rose-700">{error || 'Tenant no disponible'}</div>;
   }
 
+  const accentStyle = { backgroundColor: tenant.primaryColor };
+  const currentStep = stepMeta[step];
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-100">
-        <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
-          <button onClick={() => navigate('/')} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition">
-            <ArrowLeft size={16} /> Volver
-          </button>
+    <div className="app-shell min-h-screen px-4 py-5 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl">
+        <header className="panel-light mb-6 flex flex-col gap-5 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: tenant.primaryColor }}>
-              {tenant.businessName[0]}
-            </div>
-            <div>
-              <p className="font-bold text-sm text-gray-900">{tenant.businessName}</p>
-              <p className="text-xs text-gray-400">Reserva Online</p>
+            <button onClick={() => navigate('/')} className="button-ghost-luxe rounded-full px-4 py-2.5">
+              <ArrowLeft size={16} /> Volver
+            </button>
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-[18px] text-sm font-bold text-white shadow-[0_14px_28px_rgba(0,0,0,0.18)]" style={accentStyle}>
+                {tenant.businessName[0]}
+              </div>
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#2ed7ff]">Reserva online</p>
+                <h1 className="font-['Space_Grotesk'] text-2xl font-bold tracking-[-0.05em] text-white">{tenant.businessName}</h1>
+              </div>
             </div>
           </div>
-        </div>
-      </header>
 
-      <div className="bg-white border-b border-gray-100">
-        <div className="max-w-3xl mx-auto px-4 py-6">
-          <h1 className="text-xl font-bold text-gray-900">{tenant.businessName}</h1>
-          <div className="flex items-center gap-3 mt-1 text-sm text-gray-500">
-            <span className="flex items-center gap-1"><MapPin size={13} /> {tenant.address}</span>
+          <div className="flex flex-wrap items-center gap-3 text-sm text-[#a1a1aa]">
+            <div className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-white/80">
+              <span className="inline-flex items-center gap-2">
+                <MapPin size={14} /> {tenant.address}
+              </span>
+            </div>
+            <div className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-4 py-2 text-emerald-200">
+              <span className="inline-flex items-center gap-2">
+                <ShieldCheck size={14} /> Confirmacion inmediata
+              </span>
+            </div>
           </div>
-        </div>
-      </div>
+        </header>
 
-      <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
-        {error && <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">{error}</div>}
-
-        <div className="flex items-center justify-center gap-3">
-          {[1, 2, 3].map((s) => (
-            <div key={s} className={`w-8 h-8 rounded-full grid place-items-center text-sm font-bold ${step >= s ? 'text-white' : 'bg-gray-100 text-gray-400'}`} style={step >= s ? { backgroundColor: tenant.primaryColor } : {}}>{s}</div>
-          ))}
-        </div>
-
-        {step === 1 && (
-          <div className="space-y-6">
-            <h2 className="text-lg font-bold text-gray-900">Elegi un servicio y profesional</h2>
-            {categories.map((cat) => (
-              <div key={cat}>
-                <h3 className="text-sm font-semibold text-gray-400 uppercase mb-2">{cat}</h3>
-                <div className="space-y-2">
-                  {services.filter((s) => (s.category || 'General') === cat).map((s) => (
-                    <button
-                      key={s.id}
-                      onClick={() => {
-                        setSelectedService(s);
-                        setSelectedProfessional(null);
-                      }}
-                      className={`w-full text-left p-4 rounded-xl border-2 transition ${selectedService?.id === s.id ? 'border-primary-500 bg-primary-50' : 'border-gray-100 bg-white hover:border-gray-300'}`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-semibold text-gray-900">{s.name}</p>
-                          <p className="text-sm text-gray-500">{s.description}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-bold text-gray-900">${s.price.toLocaleString()}</p>
-                          <p className="text-xs text-gray-400 flex items-center gap-1 justify-end"><Clock size={11} /> {s.duration} min</p>
-                        </div>
-                      </div>
-                    </button>
-                  ))}
+        <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+          <section className="panel-dark grain-overlay relative overflow-hidden px-6 py-7 sm:px-8">
+            <div className="absolute inset-x-0 top-0 h-40 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.10),transparent_72%)]" />
+            <div className="relative space-y-6">
+              <div className="space-y-4">
+                <div className="eyebrow border-white/10 bg-white/5 text-stone-300">{currentStep.label}</div>
+                <div className="max-w-2xl">
+                  <h2 className="font-['Space_Grotesk'] text-3xl font-bold tracking-[-0.05em] text-white sm:text-4xl">
+                    {currentStep.title}
+                  </h2>
+                  <p className="mt-3 max-w-xl text-sm leading-7 text-stone-300">{currentStep.description}</p>
                 </div>
               </div>
-            ))}
 
-            {selectedService && (
-              <div className="space-y-3">
-                <h3 className="font-semibold text-gray-900">Profesionales</h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {professionals.map((p) => (
-                    <button
-                      key={p.id}
-                      onClick={() => setSelectedProfessional(p)}
-                      className={`p-4 rounded-xl border-2 text-center transition ${selectedProfessional?.id === p.id ? 'border-primary-500 bg-primary-50' : 'border-gray-100 bg-white hover:border-gray-300'}`}
-                    >
-                      <p className="font-medium text-gray-900 text-sm">{p.name}</p>
-                      <p className="text-xs text-gray-400">{p.speciality || 'Profesional'}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+              <div className="grid gap-3 sm:grid-cols-3">
+                {([1, 2, 3] as Step[]).map((item) => {
+                  const active = step === item;
+                  const done = step > item;
 
-            {selectedService && selectedProfessional && (
-              <button onClick={() => setStep(2)} className="w-full py-3 rounded-xl text-white font-semibold flex items-center justify-center gap-2" style={{ backgroundColor: tenant.primaryColor }}>
-                Continuar <ArrowRight size={18} />
-              </button>
-            )}
-          </div>
-        )}
-
-        {step === 2 && (
-          <div className="space-y-6">
-            <button onClick={() => setStep(1)} className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"><ArrowLeft size={14} /> Cambiar seleccion</button>
-            <h2 className="text-lg font-bold text-gray-900">Elegi fecha y hora</h2>
-
-            <div className="bg-white rounded-2xl border border-gray-100 p-5">
-              <div className="flex items-center justify-between mb-4">
-                <button onClick={() => setCalDate(new Date(calYear, calMonth - 1, 1))} className="p-1.5 hover:bg-gray-100 rounded-lg"><ChevronLeft size={18} /></button>
-                <h3 className="font-semibold text-gray-900">{monthNames[calMonth]} {calYear}</h3>
-                <button onClick={() => setCalDate(new Date(calYear, calMonth + 1, 1))} className="p-1.5 hover:bg-gray-100 rounded-lg"><ChevronRight size={18} /></button>
-              </div>
-              <div className="grid grid-cols-7 gap-1 text-center">
-                {['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'].map((d) => <div key={d} className="text-xs text-gray-400 py-2">{d}</div>)}
-                {calDays.map((day, i) => {
-                  if (day === null) return <div key={`e${i}`} />;
-                  const available = isDayAvailable(day);
-                  const isSelected = selectedDate && day === selectedDate.getDate() && calMonth === selectedDate.getMonth() && calYear === selectedDate.getFullYear();
                   return (
-                    <button
-                      key={i}
-                      disabled={!available}
-                      onClick={() => {
-                        setSelectedDate(new Date(calYear, calMonth, day));
-                        setSelectedTime(null);
-                      }}
-                      className={`py-2.5 rounded-lg text-sm ${isSelected ? 'text-white' : available ? 'text-gray-700 hover:bg-gray-100' : 'text-gray-300 cursor-not-allowed'}`}
-                      style={isSelected ? { backgroundColor: tenant.primaryColor } : {}}
+                    <div
+                      key={item}
+                      className={`rounded-[24px] border px-4 py-4 transition ${
+                        active
+                          ? 'border-white/30 bg-white/12'
+                          : done
+                            ? 'border-emerald-500/20 bg-emerald-500/10'
+                            : 'border-white/10 bg-white/5'
+                      }`}
                     >
-                      {day}
-                    </button>
+                      <div className="mb-4 flex items-center justify-between">
+                        <div
+                          className={`grid h-9 w-9 place-items-center rounded-full text-sm font-bold ${
+                            active ? 'text-white' : done ? 'bg-emerald-400 text-[#132417]' : 'bg-white/10 text-stone-300'
+                          }`}
+                          style={active ? accentStyle : undefined}
+                        >
+                          {item}
+                        </div>
+                        <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-stone-400">
+                          {stepMeta[item].label}
+                        </span>
+                      </div>
+                      <p className="text-sm font-semibold text-white">{stepMeta[item].title}</p>
+                    </div>
                   );
                 })}
               </div>
-            </div>
 
-            {selectedDate && (
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-3">Horarios disponibles</h3>
-                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                  {timeSlots.map((t) => (
-                    <button key={t} onClick={() => setSelectedTime(t)} className={`py-2.5 rounded-xl text-sm border-2 ${selectedTime === t ? 'text-white border-transparent' : 'border-gray-100 bg-white hover:border-gray-300'}`} style={selectedTime === t ? { backgroundColor: tenant.primaryColor } : {}}>{t}</button>
+              {error && (
+                <div className="rounded-[24px] border border-rose-500/30 bg-rose-500/12 px-4 py-4 text-sm text-rose-100">
+                  {error}
+                </div>
+              )}
+
+              {step === 1 && (
+                <div className="space-y-6">
+                  {categories.map((category) => (
+                    <div key={category} className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-stone-400">{category}</h3>
+                        <span className="text-xs text-stone-500">
+                          {services.filter((service) => (service.category || 'General') === category).length} opciones
+                        </span>
+                      </div>
+                      <div className="grid gap-3">
+                        {services
+                          .filter((service) => (service.category || 'General') === category)
+                          .map((service) => {
+                            const active = selectedService?.id === service.id;
+
+                            return (
+                              <button
+                                key={service.id}
+                                onClick={() => {
+                                  setSelectedService(service);
+                                  setSelectedProfessional(null);
+                                }}
+                                className={`rounded-[26px] border p-5 text-left transition ${
+                                  active ? 'border-white/35 bg-white/12' : 'border-white/10 bg-white/5 hover:bg-white/8'
+                                }`}
+                                style={active ? { boxShadow: `inset 0 0 0 1px ${tenant.primaryColor}` } : undefined}
+                              >
+                                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                                  <div>
+                                    <p className="text-lg font-semibold text-white">{service.name}</p>
+                                    <p className="mt-2 max-w-xl text-sm leading-7 text-stone-300">{service.description}</p>
+                                  </div>
+                                  <div className="sm:text-right">
+                                    <p className="font-['Space_Grotesk'] text-2xl font-bold tracking-[-0.05em] text-white">
+                                      ${service.price.toLocaleString()}
+                                    </p>
+                                    <p className="mt-2 inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-1 text-xs text-stone-300">
+                                      <Clock size={12} /> {service.duration} min
+                                    </p>
+                                  </div>
+                                </div>
+                              </button>
+                            );
+                          })}
+                      </div>
+                    </div>
                   ))}
+
+                  {selectedService && (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-stone-400">Profesionales</h3>
+                        <span className="text-xs text-stone-500">Selecciona a quien te atendera</span>
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                        {professionals.map((professional) => {
+                          const active = selectedProfessional?.id === professional.id;
+
+                          return (
+                            <button
+                              key={professional.id}
+                              onClick={() => setSelectedProfessional(professional)}
+                              className={`rounded-[24px] border p-5 text-left transition ${
+                                active ? 'border-white/35 bg-white/12' : 'border-white/10 bg-white/5 hover:bg-white/8'
+                              }`}
+                              style={active ? { boxShadow: `inset 0 0 0 1px ${tenant.primaryColor}` } : undefined}
+                            >
+                              <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 text-white">
+                                {professional.name.charAt(0)}
+                              </div>
+                              <p className="font-semibold text-white">{professional.name}</p>
+                              <p className="mt-1 text-sm text-stone-300">{professional.speciality || 'Profesional'}</p>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedService && selectedProfessional && (
+                    <button onClick={() => setStep(2)} className="button-luxe w-full rounded-[22px]" style={accentStyle}>
+                      Continuar a agenda <ArrowRight size={18} />
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {step === 2 && (
+                <div className="space-y-6">
+                  <button onClick={() => setStep(1)} className="inline-flex items-center gap-2 text-sm text-stone-300 transition hover:text-white">
+                    <ArrowLeft size={14} /> Cambiar servicio o profesional
+                  </button>
+
+                  <div className="rounded-[28px] border border-white/10 bg-white/5 p-5">
+                    <div className="mb-5 flex items-center justify-between">
+                      <button onClick={() => setCalDate(new Date(calYear, calMonth - 1, 1))} className="button-ghost-luxe h-11 w-11 rounded-full p-0">
+                        <ChevronLeft size={18} />
+                      </button>
+                      <h3 className="font-['Space_Grotesk'] text-2xl font-bold tracking-[-0.05em] text-white">
+                        {monthNames[calMonth]} {calYear}
+                      </h3>
+                      <button onClick={() => setCalDate(new Date(calYear, calMonth + 1, 1))} className="button-ghost-luxe h-11 w-11 rounded-full p-0">
+                        <ChevronRight size={18} />
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-7 gap-2 text-center">
+                      {['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'].map((day) => (
+                        <div key={day} className="py-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-stone-500">
+                          {day}
+                        </div>
+                      ))}
+                      {calDays.map((day, index) => {
+                        if (day === null) return <div key={`empty-${index}`} />;
+
+                        const available = isDayAvailable(day);
+                        const isSelected =
+                          selectedDate &&
+                          day === selectedDate.getDate() &&
+                          calMonth === selectedDate.getMonth() &&
+                          calYear === selectedDate.getFullYear();
+
+                        return (
+                          <button
+                            key={`${day}-${index}`}
+                            disabled={!available}
+                            onClick={() => {
+                              setSelectedDate(new Date(calYear, calMonth, day));
+                              setSelectedTime(null);
+                            }}
+                            className={`rounded-2xl py-3 text-sm font-semibold transition ${
+                              isSelected
+                                ? 'text-white'
+                                : available
+                                  ? 'bg-white/5 text-stone-200 hover:bg-white/10'
+                                  : 'cursor-not-allowed text-stone-600'
+                            }`}
+                            style={isSelected ? accentStyle : undefined}
+                          >
+                            {day}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {selectedDate && (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-stone-400">Horarios disponibles</h3>
+                        <span className="text-xs text-stone-500">{timeSlots.length} bloques libres</span>
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-4">
+                        {timeSlots.map((time) => (
+                          <button
+                            key={time}
+                            onClick={() => setSelectedTime(time)}
+                            className={`rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
+                              selectedTime === time
+                                ? 'border-transparent text-white'
+                                : 'border-white/10 bg-white/5 text-stone-200 hover:bg-white/10'
+                            }`}
+                            style={selectedTime === time ? accentStyle : undefined}
+                          >
+                            {time}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedDate && selectedTime && (
+                    <button onClick={() => setStep(3)} className="button-luxe w-full rounded-[22px]" style={accentStyle}>
+                      Continuar con tus datos <ArrowRight size={18} />
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {step === 3 && (
+                <div className="space-y-6">
+                  <button onClick={() => setStep(2)} className="inline-flex items-center gap-2 text-sm text-stone-300 transition hover:text-white">
+                    <ArrowLeft size={14} /> Cambiar agenda
+                  </button>
+
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    {[
+                      { icon: User, placeholder: 'Nombre completo', value: clientName, setter: setClientName },
+                      { icon: Mail, placeholder: 'Email', value: clientEmail, setter: setClientEmail },
+                      { icon: Phone, placeholder: 'Telefono', value: clientPhone, setter: setClientPhone },
+                    ].map((field) => (
+                      <div key={field.placeholder} className="relative">
+                        <field.icon size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-500" />
+                        <input
+                          value={field.value}
+                          onChange={(e) => field.setter(e.target.value)}
+                          className="h-13 w-full rounded-[22px] border border-white/10 bg-white/5 pl-11 pr-4 text-sm text-white outline-none transition placeholder:text-stone-500 focus:border-white/25 focus:bg-white/8"
+                          placeholder={field.placeholder}
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  <button
+                    onClick={handleBook}
+                    disabled={booking || !clientName || !clientEmail || !clientPhone}
+                    className="button-luxe w-full rounded-[22px]"
+                    style={accentStyle}
+                  >
+                    <CheckCircle2 size={18} /> {booking ? 'Reservando...' : 'Confirmar turno'}
+                  </button>
+                </div>
+              )}
+            </div>
+          </section>
+
+          <aside className="space-y-6">
+            <div className="panel-light p-6">
+              <p className="eyebrow mb-4">Resumen</p>
+              <h3 className="font-['Space_Grotesk'] text-2xl font-bold tracking-[-0.05em] text-white">
+                Tu experiencia en una sola vista.
+              </h3>
+              <div className="mt-6 space-y-4">
+                <div className="soft-card p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#2ed7ff]">Servicio</p>
+                  <p className="mt-2 text-base font-semibold text-white">{selectedService?.name || 'Aun no seleccionado'}</p>
+                </div>
+                <div className="soft-card p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#2ed7ff]">Profesional</p>
+                  <p className="mt-2 text-base font-semibold text-white">{selectedProfessional?.name || 'Selecciona un perfil'}</p>
+                </div>
+                <div className="soft-card p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#2ed7ff]">Fecha y hora</p>
+                  <p className="mt-2 text-base font-semibold text-white">
+                    {selectedDate ? `${selectedDate.toLocaleDateString()}${selectedTime ? ` - ${selectedTime}` : ''}` : 'Define tu agenda'}
+                  </p>
                 </div>
               </div>
-            )}
-
-            {selectedDate && selectedTime && (
-              <button onClick={() => setStep(3)} className="w-full py-3 rounded-xl text-white font-semibold flex items-center justify-center gap-2" style={{ backgroundColor: tenant.primaryColor }}>
-                Continuar <ArrowRight size={18} />
-              </button>
-            )}
-          </div>
-        )}
-
-        {step === 3 && (
-          <div className="space-y-6">
-            <button onClick={() => setStep(2)} className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"><ArrowLeft size={14} /> Cambiar horario</button>
-            <h2 className="text-lg font-bold text-gray-900">Tus datos</h2>
-            <div className="space-y-4">
-              <div className="relative"><User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" /><input value={clientName} onChange={(e) => setClientName(e.target.value)} className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm" placeholder="Nombre" /></div>
-              <div className="relative"><Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" /><input value={clientEmail} onChange={(e) => setClientEmail(e.target.value)} className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm" placeholder="Email" /></div>
-              <div className="relative"><Phone size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" /><input value={clientPhone} onChange={(e) => setClientPhone(e.target.value)} className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm" placeholder="Telefono" /></div>
             </div>
-            <button
-              onClick={handleBook}
-              disabled={booking || !clientName || !clientEmail || !clientPhone}
-              className="w-full py-3 rounded-xl text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
-              style={{ backgroundColor: tenant.primaryColor }}
-            >
-              <CheckCircle2 size={18} /> {booking ? 'Reservando...' : 'Confirmar turno'}
-            </button>
-          </div>
-        )}
+
+            <div className="panel-light p-6">
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#f52ccf]">Por que se siente mejor</p>
+              <div className="mt-4 space-y-4 text-sm leading-7 text-[#a1a1aa]">
+                <p>La interfaz toma el contraste y la atmosfera editorial de la landing, pero la baja a un flujo de reservas claro.</p>
+                <p>Los pasos, tarjetas y controles ahora tienen mas jerarquia, mejor respiracion y detalles que hacen la experiencia mas premium.</p>
+              </div>
+            </div>
+          </aside>
+        </div>
       </div>
     </div>
   );
