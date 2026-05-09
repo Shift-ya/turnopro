@@ -13,6 +13,9 @@ export default function RequireGuestLayout() {
   }
 
   if (isAuthenticated) {
+    // Si el usuario está autenticado, no le mostramos el login.
+    // Se mantiene el redirect a dashboard, pero para que el botón de la landing
+    // lleve a login, el logout debe limpiar sesión.
     return <Navigate to="/dashboard" replace />;
   }
 

@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { User } from '../types';
 import { api, getStoredToken, setStoredToken } from '../lib/api';
-import { getLandingUrl } from '../lib/runtimeConfig';
+
 
 interface AuthContextType {
   user: User | null;
@@ -95,13 +95,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem(STORAGE_KEY);
     setStoredToken(null);
 
-    getLandingUrl()
-      .then(url => {
-        window.location.href = url;
-      })
-      .catch(() => {
-        window.location.href = 'https://www.shiftya.online';
-      });
+    // Forzar que después del logout volvamos al flujo de login
+    window.location.replace('/login');
   };
 
   return (
