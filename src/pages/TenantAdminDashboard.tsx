@@ -20,6 +20,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import MetricCard from '../components/ui/MetricCard';
 import StatusBadge from '../components/ui/StatusBadge';
+import { Input } from '../components/ui/input';
 import { EditProfessionalDialog } from '../components/dialogs/EditProfessionalDialog';
 import { EditServiceDialog } from '../components/dialogs/EditServiceDialog';
 import { CreateServiceDialog } from '../components/dialogs/CreateServiceDialog';
@@ -30,9 +31,18 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../hooks/useToast';
 import { TOAST_MESSAGES } from '../types/toast';
 import { api, type ApiAppointment, type ApiProfessional, type ApiService, type ApiTenant } from '../lib/api';
-import { color } from 'framer-motion';
 
 type Tab = 'dashboard' | 'calendar' | 'professionals' | 'services' | 'settings';
+type AppointmentFilterStatus = '' | ApiAppointment['status'];
+
+const APPOINTMENT_STATUSES: Array<{ value: AppointmentFilterStatus; label: string }> = [
+  { value: '', label: 'Todos los estados' },
+  { value: 'BOOKED', label: 'Reservado' },
+  { value: 'CONFIRMED', label: 'Confirmado' },
+  { value: 'CANCELLED', label: 'Cancelado' },
+  { value: 'COMPLETED', label: 'Completado' },
+  { value: 'NO_SHOW', label: 'No show' },
+];
 
 const navItems: { id: Tab; label: string; icon: React.ReactNode; caption: string }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: <BarChart3 size={18} />, caption: 'KPIs y foco diario' },
@@ -41,6 +51,38 @@ const navItems: { id: Tab; label: string; icon: React.ReactNode; caption: string
   { id: 'services', label: 'Servicios', icon: <Briefcase size={18} />, caption: 'Oferta comercial' },
   { id: 'settings', label: 'Configuracion', icon: <Settings size={18} />, caption: 'Identidad y datos' },
 ];
+
+function parseDateFilter(value: string): string | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+
+  const match = trimmed.match(/^(\d{2})\.(\d{2})\.(\d{2}|\d{4})$/);
+  if (!match) return undefined;
+
+  const [, day, month, year] = match;
+  const normalizedYear = year.length === 2 ? `20${year}` : year;
+  return `${normalizedYear}-${month}-${day}`;
+}
+
+function formatDateInput(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 8);
+
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}.${digits.slice(2)}`;
+  if (digits.length <= 6) return `${digits.slice(0, 2)}.${digits.slice(2, 4)}.${digits.slice(4)}`;
+
+  return `${digits.slice(0, 2)}.${digits.slice(2, 4)}.${digits.slice(4)}`;
+}
+
+function hasCompleteDate(value: string): boolean {
+  return value.length === 8 || value.length === 10;
+}
+
+function formatDateLabel(value: string): string {
+  const [year, month, day] = value.split('-');
+  if (!year || !month || !day) return value;
+  return `${day}.${month}.${year.slice(-2)}`;
+}
 
 export default function TenantAdminDashboard() {
   const navigate = useNavigate();
@@ -57,8 +99,17 @@ export default function TenantAdminDashboard() {
   const [tenant, setTenant] = useState<ApiTenant | null>(null);
   const [metrics, setMetrics] = useState<any>(null);
   const [appointments, setAppointments] = useState<ApiAppointment[]>([]);
+  const [calendarAppointments, setCalendarAppointments] = useState<ApiAppointment[]>([]);
   const [professionals, setProfessionals] = useState<ApiProfessional[]>([]);
   const [services, setServices] = useState<ApiService[]>([]);
+  const [loadingCalendar, setLoadingCalendar] = useState(false);
+  const [calendarFilters, setCalendarFilters] = useState({
+    professionalId: '',
+    date: '',
+    serviceId: '',
+    clientName: '',
+    status: '' as AppointmentFilterStatus,
+  });
 
   const tenantId = user?.tenantId;
 
@@ -72,6 +123,7 @@ export default function TenantAdminDashboard() {
       setTenant(overview.tenant);
       setMetrics(overview.metrics);
       setAppointments(overview.appointments);
+      setCalendarAppointments(overview.appointments.slice().sort((a, b) => `${a.date}${a.startTime}`.localeCompare(`${b.date}${b.startTime}`)));
       setProfessionals(overview.professionals);
       setServices(overview.services);
     } catch (e) {
@@ -85,6 +137,56 @@ export default function TenantAdminDashboard() {
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tenantId]);
+
+  const loadCalendarAppointments = async (filters = calendarFilters) => {
+    if (!tenantId) return;
+
+    const parsedDate = parseDateFilter(filters.date);
+    const hasDateValue = filters.date.trim().length > 0;
+    const dateIsComplete = hasCompleteDate(filters.date.trim());
+
+    if (hasDateValue && dateIsComplete && !parsedDate) {
+      setError('La fecha debe tener formato dd.mm.aa o dd.mm.aaaa');
+      return;
+    }
+
+    try {
+      setLoadingCalendar(true);
+      setError('');
+      const data = await api.listTenantAppointments(tenantId, {
+        professionalId: filters.professionalId || undefined,
+        date: dateIsComplete ? parsedDate : undefined,
+        serviceId: filters.serviceId || undefined,
+        clientName: filters.clientName.trim() || undefined,
+        status: filters.status || undefined,
+      });
+      setCalendarAppointments(data);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo cargar la agenda');
+    } finally {
+      setLoadingCalendar(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'calendar') {
+      loadCalendarAppointments();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, tenantId]);
+
+  useEffect(() => {
+    if (activeTab !== 'calendar' || !tenantId) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      loadCalendarAppointments(calendarFilters);
+    }, 250);
+
+    return () => window.clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [calendarFilters, activeTab, tenantId]);
 
   const handleLogout = () => {
     logout();
@@ -264,6 +366,18 @@ export default function TenantAdminDashboard() {
     }
   };
 
+  const resetCalendarFilters = async () => {
+    const emptyFilters = {
+      professionalId: '',
+      date: '',
+      serviceId: '',
+      clientName: '',
+      status: '' as AppointmentFilterStatus,
+    };
+    setCalendarFilters(emptyFilters);
+    await loadCalendarAppointments(emptyFilters);
+  };
+
   if (!tenantId) {
     return <div className="app-shell grid min-h-screen place-items-center">Usuario sin tenant asignado</div>;
   }
@@ -420,21 +534,94 @@ export default function TenantAdminDashboard() {
 
             {!loading && activeTab === 'calendar' && (
               <div className="panel-light p-6">
-                <div className="mb-5">
-                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#2ed7ff]">Agenda completa</p>
-                  <h2 className="mt-2 font-['Space_Grotesk'] text-2xl font-bold tracking-[-0.05em] text-white">Todas las reservas</h2>
+                <div className="mb-5 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#2ed7ff]">Agenda completa</p>
+                    <h2 className="mt-2 font-['Space_Grotesk'] text-2xl font-bold tracking-[-0.05em] text-white">Todas las reservas</h2>
+                  </div>
+                  <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-[#a1a1aa]">
+                    {calendarAppointments.length} resultados
+                  </div>
                 </div>
-                {appointments.length === 0 ? (
+
+                <div className="mb-6 grid gap-3 lg:grid-cols-2 2xl:grid-cols-5">
+                  <Input
+                    value={calendarFilters.clientName}
+                    onChange={(event) => setCalendarFilters((current) => ({ ...current, clientName: event.target.value }))}
+                    placeholder="Cliente que reserva"
+                  />
+
+                  <Input
+                    value={calendarFilters.date}
+                    onChange={(event) =>
+                      setCalendarFilters((current) => ({
+                        ...current,
+                        date: formatDateInput(event.target.value),
+                      }))
+                    }
+                    placeholder="Fecha dd.mm.aa"
+                  />
+
+                  <select
+                    value={calendarFilters.professionalId}
+                    onChange={(event) => setCalendarFilters((current) => ({ ...current, professionalId: event.target.value }))}
+                    className="flex h-11 w-full rounded-2xl border border-white/10 bg-[#0d0d0d] px-4 py-2 text-sm text-white outline-none transition focus:border-[#5e92ff] focus:bg-[#0f111a] focus:ring-4 focus:ring-[#5e92ff]/15"
+                  >
+                    <option value="">Todos los profesionales</option>
+                    {professionals.map((professional) => (
+                      <option key={professional.id} value={professional.id}>
+                        {professional.name}
+                      </option>
+                    ))}
+                  </select>
+
+                  <select
+                    value={calendarFilters.serviceId}
+                    onChange={(event) => setCalendarFilters((current) => ({ ...current, serviceId: event.target.value }))}
+                    className="flex h-11 w-full rounded-2xl border border-white/10 bg-[#0d0d0d] px-4 py-2 text-sm text-white outline-none transition focus:border-[#5e92ff] focus:bg-[#0f111a] focus:ring-4 focus:ring-[#5e92ff]/15"
+                  >
+                    <option value="">Todos los servicios</option>
+                    {services.map((service) => (
+                      <option key={service.id} value={service.id}>
+                        {service.name}
+                      </option>
+                    ))}
+                  </select>
+
+                  <select
+                    value={calendarFilters.status}
+                    onChange={(event) =>
+                      setCalendarFilters((current) => ({
+                        ...current,
+                        status: event.target.value as AppointmentFilterStatus,
+                      }))
+                    }
+                    className="flex h-11 w-full rounded-2xl border border-white/10 bg-[#0d0d0d] px-4 py-2 text-sm text-white outline-none transition focus:border-[#5e92ff] focus:bg-[#0f111a] focus:ring-4 focus:ring-[#5e92ff]/15"
+                  >
+                    {APPOINTMENT_STATUSES.map((status) => (
+                      <option key={status.label} value={status.value}>
+                        {status.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="mb-6 flex flex-wrap gap-3">
+                  <button onClick={resetCalendarFilters} className="button-ghost-luxe rounded-2xl" disabled={loadingCalendar}>
+                    Limpiar filtros
+                  </button>
+                </div>
+
+                {loadingCalendar ? (
+                  <div className="soft-card p-5 text-sm text-[#a1a1aa]">Cargando agenda filtrada...</div>
+                ) : calendarAppointments.length === 0 ? (
                   <div className="soft-card p-5 text-sm text-[#a1a1aa]">Sin turnos cargados.</div>
                 ) : (
                   <div className="space-y-3">
-                    {appointments
-                      .slice()
-                      .sort((a, b) => `${a.date}${a.startTime}`.localeCompare(`${b.date}${b.startTime}`))
-                      .map((appointment) => (
+                    {calendarAppointments.map((appointment) => (
                         <div key={appointment.id} className="soft-card flex flex-col gap-3 p-4 xl:flex-row xl:items-center">
                           <div className="w-40 shrink-0 text-sm font-semibold text-[#bfd0ff]">
-                            {appointment.date} {appointment.startTime.slice(0, 5)}
+                            {formatDateLabel(appointment.date)} {appointment.startTime.slice(0, 5)}
                           </div>
                           <div className="min-w-0 flex-1">
                             <p className="font-semibold text-white">{appointment.clientName}</p>
