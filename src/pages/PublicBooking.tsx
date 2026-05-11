@@ -13,9 +13,10 @@ import {
   User,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { api, type ApiProfessional, type ApiService, type PublicTenant } from '../lib/api';
+import type { ApiProfessional, ApiService, PublicTenant } from '../lib/api';
 import { useToast } from '../hooks/useToast';
 import { TOAST_MESSAGES } from '../types/toast';
+import { publicBookingRepository } from '../repositories/publicBookingRepository';
 
 type Step = 1 | 2 | 3;
 
@@ -73,8 +74,8 @@ export default function PublicBooking() {
       try {
         setLoading(true);
         const [tenantData, serviceData] = await Promise.all([
-          api.getPublicTenant(DEMO_SLUG),
-          api.getPublicServices(DEMO_SLUG),
+          publicBookingRepository.loadTenant(DEMO_SLUG),
+          publicBookingRepository.loadServices(DEMO_SLUG),
         ]);
         setTenant(tenantData);
         setServices(serviceData);
@@ -91,7 +92,7 @@ export default function PublicBooking() {
   useEffect(() => {
     if (!selectedService) return;
 
-    api.getPublicProfessionals(DEMO_SLUG, selectedService.id)
+    publicBookingRepository.loadProfessionals(DEMO_SLUG, selectedService.id)
       .then(setProfessionals)
       .catch((e) => setError(e instanceof Error ? e.message : 'No se pudieron cargar profesionales'));
   }, [selectedService]);
@@ -100,7 +101,7 @@ export default function PublicBooking() {
     if (!selectedService || !selectedProfessional || !selectedDate) return;
 
     const date = toIsoDate(selectedDate);
-    api.getPublicSlots(DEMO_SLUG, selectedProfessional.id, selectedService.id, date)
+    publicBookingRepository.loadSlots(DEMO_SLUG, selectedProfessional.id, selectedService.id, date)
       .then((response) => {
         setTimeSlots(
           response.slots
@@ -117,7 +118,7 @@ export default function PublicBooking() {
 
     try {
       setBooking(true);
-      await api.createPublicAppointment(DEMO_SLUG, {
+      await publicBookingRepository.createAppointment(DEMO_SLUG, {
         professionalId: selectedProfessional.id,
         serviceId: selectedService.id,
         appointmentDate: toIsoDate(selectedDate),
@@ -188,7 +189,7 @@ export default function PublicBooking() {
                 {tenant.businessName[0]}
               </div>
               <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#2ed7ff]">Reserva online</p>
+                <p className="text-sm font-semibold uppercase tracking-[0.22em] text-accent-500">Reserva online</p>
                 <h1 className="font-['Space_Grotesk'] text-2xl font-bold tracking-[-0.05em] text-white">{tenant.businessName}</h1>
               </div>
             </div>
@@ -230,7 +231,7 @@ export default function PublicBooking() {
                   return (
                     <div
                       key={item}
-                      className={`rounded-[24px] border px-4 py-4 transition ${
+                      className={`rounded-3xl border px-4 py-4 transition ${
                         active
                           ? 'border-white/30 bg-white/12'
                           : done
@@ -258,7 +259,7 @@ export default function PublicBooking() {
               </div>
 
               {error && (
-                <div className="rounded-[24px] border border-rose-500/30 bg-rose-500/12 px-4 py-4 text-sm text-rose-100">
+                <div className="rounded-3xl border border-rose-500/30 bg-rose-500/12 px-4 py-4 text-sm text-rose-100">
                   {error}
                 </div>
               )}
@@ -326,7 +327,7 @@ export default function PublicBooking() {
                             <button
                               key={professional.id}
                               onClick={() => setSelectedProfessional(professional)}
-                              className={`rounded-[24px] border p-5 text-left transition ${
+                              className={`rounded-3xl border p-5 text-left transition ${
                                 active ? 'border-white/35 bg-white/12' : 'border-white/10 bg-white/5 hover:bg-white/8'
                               }`}
                               style={active ? { boxShadow: `inset 0 0 0 1px ${tenant.primaryColor}` } : undefined}
@@ -487,15 +488,15 @@ export default function PublicBooking() {
               </h3>
               <div className="mt-6 space-y-4">
                 <div className="soft-card p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#2ed7ff]">Servicio</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent-500">Servicio</p>
                   <p className="mt-2 text-base font-semibold text-white">{selectedService?.name || 'Aun no seleccionado'}</p>
                 </div>
                 <div className="soft-card p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#2ed7ff]">Profesional</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent-500">Profesional</p>
                   <p className="mt-2 text-base font-semibold text-white">{selectedProfessional?.name || 'Selecciona un perfil'}</p>
                 </div>
                 <div className="soft-card p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#2ed7ff]">Fecha y hora</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent-500">Fecha y hora</p>
                   <p className="mt-2 text-base font-semibold text-white">
                     {selectedDate ? `${selectedDate.toLocaleDateString()}${selectedTime ? ` - ${selectedTime}` : ''}` : 'Define tu agenda'}
                   </p>

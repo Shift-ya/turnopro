@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { User } from '../types';
-import { api, getStoredToken, setStoredToken } from '../lib/api';
+import { getStoredToken, setStoredToken } from '../lib/api';
+import { authRepository } from '../repositories/authRepository';
 
 
 interface AuthContextType {
@@ -73,7 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      const session = await api.login(email, password);
+      const session = await authRepository.login(email, password);
       if (!session.accessToken) {
         return false;
       }
