@@ -86,7 +86,7 @@ public class SuperAdminController {
         String rawPassword = base + "-" + last4;
 
         User user = User.builder()
-            .tenantId(saved.getId())
+            .tenant(saved)
             .email(request.email() != null ? request.email().toLowerCase() : null)
             .passwordHash(passwordEncoder.encode(rawPassword))
             .firstName(firstName.isEmpty() ? "" : firstName)
