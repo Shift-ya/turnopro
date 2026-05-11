@@ -5,7 +5,8 @@ export interface AppConfig {
 
 const LOCAL_CONFIG: AppConfig = {
   landingUrl: 'http://localhost:3000',
-  apiUrl: 'https://apidev-turnow.shiftya.online/api',
+  /* apiurl: 'https://apidev-turnow.shiftya.online' */
+  apiUrl: 'http://localhost:8080/api',
 };
 
 const PROD_FALLBACK_CONFIG: AppConfig = {

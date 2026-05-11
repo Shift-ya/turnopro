@@ -387,7 +387,7 @@ npm run dev
 ### ❌ Error de conexión API Frontend-Backend
 
 1. Verificar que el backend esté corriendo en `http://localhost:8080/api`
-2. Revisar `src/lib/api.ts` si la URL está correcta
+2. Revisar `src/lib/runtimeConfig` si la URL está correcta
 3. Verificar CORS en backend
 4. Revisar la consola del navegador
 
