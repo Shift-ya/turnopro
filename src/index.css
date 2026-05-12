@@ -168,8 +168,8 @@ h6 {
     display: flex;;
     width: 100%;
     gap: 0.25rem;
-    border: 1px solid var(--component-shadow);
-    background: rgba(6, 6, 6, 0.9);
+    border-radius: 0.7rem 0.7rem 0 0;
+    background: rgba(19, 19, 19, 0.9);
     padding: 0.6rem max(env(safe-area-inset-right, 0px), 0.5rem) 0.6rem max(env(safe-area-inset-left, 0px), 0.5rem);
     box-shadow: 0 24px 60px rgba(0, 0, 0, 0.48);
     backdrop-filter: blur(18px);
