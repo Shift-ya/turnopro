@@ -163,6 +163,10 @@ h6 {
     padding-inline: 0;
   }
 
+  html.is-ios .menuShell {
+    bottom: env(safe-area-inset-bottom, 0px);
+  }
+
   .menu {
     position: relative;
     display: flex;;
