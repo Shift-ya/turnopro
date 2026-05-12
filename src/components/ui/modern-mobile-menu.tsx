@@ -222,7 +222,6 @@ export const InteractiveMenu: React.FC<InteractiveMenuProps> = ({
       {profile && profileOpen && (
         <div className="menu__profileSheet" role="menu" aria-label="Perfil de usuario">
           <div className="menu__profileSheetTopRow">
-            <div className="menu__profileSheetHandle" aria-hidden="true" />
             <button type="button" className="menu__profileClose" aria-label="Cerrar perfil" onClick={() => setProfileOpen(false)}>
               <X size={16} />
             </button>

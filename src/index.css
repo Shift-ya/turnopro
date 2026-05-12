@@ -168,9 +168,9 @@ h6 {
     display: flex;;
     width: 100%;
     gap: 0.25rem;
-    border-radius: 0.7rem 0.7rem 0 0;
+    border-radius: 0.9rem 0.9rem 0 0;
     background: rgba(19, 19, 19, 0.9);
-    padding: 0.6rem max(env(safe-area-inset-right, 0px), 0.5rem) 0.6rem max(env(safe-area-inset-left, 0px), 0.5rem);
+    padding: 0.3rem max(env(safe-area-inset-right, 0px), 0.5rem) 0.4rem max(env(safe-area-inset-left, 0px), 0.5rem);
     box-shadow: 0 24px 60px rgba(0, 0, 0, 0.48);
     backdrop-filter: blur(18px);
     z-index: 1;
@@ -366,23 +366,24 @@ h6 {
 
   .menu__profileSheetTopRow {
     display: flex;
+    position: relative;
     align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
+    justify-content: flex-end;
     margin-bottom: 0.75rem;
   }
 
   .menu__profileSheetHandle {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
     width: 2.8rem;
     height: 0.22rem;
-    margin: 0 auto;
     border-radius: 9999px;
     background: rgba(255, 255, 255, 0.18);
   }
 
   .menu__profileClose {
     display: grid;
-    flex: 0 0 auto;
     place-items: center;
     width: 2rem;
     height: 2rem;
