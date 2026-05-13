@@ -30,6 +30,7 @@ public class turnowApplication {
         String port = System.getProperty("server.port", "8080");
         String address = System.getProperty("server.address", "127.0.0.1");
         System.out.println("===== SERVER CONFIGURATION =====");
+        System.out.println("Server Status = OK");
         System.out.println("Server listening on: " + address + ":" + port);
         System.out.println("===============================");
     }
