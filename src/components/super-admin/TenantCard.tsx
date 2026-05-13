@@ -1,4 +1,3 @@
-import React from 'react';
 import { Eye, Pause, Trash2 } from 'lucide-react';
 import { ConfirmDeleteDialog } from '../dialogs/ConfirmDeleteDialog';
 import StatusBadge from '../ui/StatusBadge';
@@ -20,7 +19,7 @@ export default function TenantCard({ tenant, onSelectTenant, onUpdateTenantStatu
           <p className="truncate font-semibold text-white">{tenant.name}</p>
           <p className="mt-1 truncate text-sm text-[#a1a1aa]">{tenant.email}</p>
         </div>
-        <div className="flex flex-shrink-0 gap-2">
+        <div className="flex shrink-0 gap-2">
           <StatusBadge status={tenant.plan} />
           <StatusBadge status={tenant.status} />
         </div>

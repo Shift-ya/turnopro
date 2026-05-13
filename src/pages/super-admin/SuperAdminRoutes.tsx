@@ -22,6 +22,7 @@ export function SuperAdminTenantsRoute() {
       deletingTenant={context.deletingTenant}
       selectedTenant={context.selectedTenant}
       onSelectTenant={context.setSelectedTenant}
+      loading={context.loading}
     />
   );
 }

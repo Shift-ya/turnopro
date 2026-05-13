@@ -12,15 +12,25 @@ import ServicesGrid from './ServicesGrid';
 import TenantOverviewMetrics from './TenantOverviewMetrics';
 import TenantSettingsPanel from './TenantSettingsPanel';
 import TodayAppointmentsPanel from './TodayAppointmentsPanel';
+import TenantAdminOverviewSkeleton from '../skeletons/TenantAdminOverviewSkeleton';
+import CalendarAppointmentsSkeleton from '../skeletons/CalendarAppointmentsSkeleton';
+import ProfessionalsSkeleton from '../skeletons/ProfessionalsSkeleton';
+import ServicesSkeleton from '../skeletons/ServicesSkeleton';
+import SettingsFormSkeleton from '../skeletons/SettingsFormSkeleton';
 
 interface TenantAdminOverviewTabProps {
   metrics: TenantAdminDashboardData['metrics'];
   todayAppts: ApiAppointment[];
   getServiceName: (id: string) => string;
   getProfName: (id: string) => string;
+  isLoading?: boolean;
 }
 
-export function TenantAdminOverviewTab({ metrics, todayAppts, getServiceName, getProfName }: TenantAdminOverviewTabProps) {
+export function TenantAdminOverviewTab({ metrics, todayAppts, getServiceName, getProfName, isLoading }: TenantAdminOverviewTabProps) {
+  if (isLoading) {
+    return <TenantAdminOverviewSkeleton />;
+  }
+
   if (!metrics) {
     return null;
   }
@@ -41,9 +51,14 @@ interface TenantAdminCalendarTabProps {
   appointments: ApiAppointment[];
   getServiceName: (id: string) => string;
   getProfName: (id: string) => string;
+  isLoading?: boolean;
 }
 
-export function TenantAdminCalendarTab({ appointments, getServiceName, getProfName }: TenantAdminCalendarTabProps) {
+export function TenantAdminCalendarTab({ appointments, getServiceName, getProfName, isLoading }: TenantAdminCalendarTabProps) {
+  if (isLoading) {
+    return <CalendarAppointmentsSkeleton />;
+  }
+
   return <CalendarAppointmentsPanel appointments={appointments} getServiceName={getServiceName} getProfName={getProfName} />;
 }
 
@@ -53,6 +68,7 @@ interface TenantAdminProfessionalsTabProps {
   onAddProfessional: (data: TenantAdminProfessionalFormData) => Promise<void>;
   onEditProfessional: (data: TenantAdminProfessionalFormData, professionalId: string) => Promise<void>;
   onToggleProfessional: (professional: ApiProfessional) => Promise<void>;
+  isLoading?: boolean;
 }
 
 export function TenantAdminProfessionalsTab({
@@ -61,7 +77,12 @@ export function TenantAdminProfessionalsTab({
   onAddProfessional,
   onEditProfessional,
   onToggleProfessional,
+  isLoading,
 }: TenantAdminProfessionalsTabProps) {
+  if (isLoading) {
+    return <ProfessionalsSkeleton />;
+  }
+
   return (
     <ProfessionalsGrid
       professionals={professionals}
@@ -79,9 +100,14 @@ interface TenantAdminServicesTabProps {
   onAddService: (data: TenantAdminServiceFormData) => Promise<void>;
   onEditService: (data: TenantAdminServiceFormData, serviceId: string) => Promise<void>;
   onRemoveService: (service: ApiService) => Promise<void>;
+  isLoading?: boolean;
 }
 
-export function TenantAdminServicesTab({ services, savingService, onAddService, onEditService, onRemoveService }: TenantAdminServicesTabProps) {
+export function TenantAdminServicesTab({ services, savingService, onAddService, onEditService, onRemoveService, isLoading }: TenantAdminServicesTabProps) {
+  if (isLoading) {
+    return <ServicesSkeleton />;
+  }
+
   return (
     <ServicesGrid
       services={services}
@@ -97,8 +123,13 @@ interface TenantAdminSettingsTabProps {
   tenant: ApiTenant | null;
   onEditTenant: (data: TenantAdminTenantFormData) => Promise<void>;
   savingTenant: boolean;
+  isLoading?: boolean;
 }
 
-export function TenantAdminSettingsTab({ tenant, onEditTenant, savingTenant }: TenantAdminSettingsTabProps) {
+export function TenantAdminSettingsTab({ tenant, onEditTenant, savingTenant, isLoading }: TenantAdminSettingsTabProps) {
+  if (isLoading) {
+    return <SettingsFormSkeleton />;
+  }
+
   return <TenantSettingsPanel tenant={tenant} onEditTenant={onEditTenant} savingTenant={savingTenant} />;
 }

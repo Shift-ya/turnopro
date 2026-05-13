@@ -16,6 +16,7 @@ export function TenantAdminOverviewRoute() {
       todayAppts={context.todayAppts}
       getServiceName={context.getServiceName}
       getProfName={context.getProfName}
+      isLoading={context.loading}
     />
   );
 }
@@ -28,6 +29,7 @@ export function TenantAdminCalendarRoute() {
       appointments={context.appointments}
       getServiceName={context.getServiceName}
       getProfName={context.getProfName}
+      isLoading={context.loading}
     />
   );
 }
@@ -42,6 +44,7 @@ export function TenantAdminProfessionalsRoute() {
       onAddProfessional={context.addProfessional}
       onEditProfessional={context.editProfessional}
       onToggleProfessional={context.toggleProfessional}
+      isLoading={context.loading}
     />
   );
 }
@@ -56,6 +59,7 @@ export function TenantAdminServicesRoute() {
       onAddService={context.addService}
       onEditService={context.editService}
       onRemoveService={context.removeService}
+      isLoading={context.loading}
     />
   );
 }
@@ -63,5 +67,5 @@ export function TenantAdminServicesRoute() {
 export function TenantAdminSettingsRoute() {
   const context = useTenantAdminDashboardOutletContext();
 
-  return <TenantAdminSettingsTab tenant={context.tenant} onEditTenant={context.editTenant} savingTenant={context.savingTenant} />;
+  return <TenantAdminSettingsTab tenant={context.tenant} onEditTenant={context.editTenant} savingTenant={context.savingTenant} isLoading={context.loading} />;
 }

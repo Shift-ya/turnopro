@@ -9,6 +9,9 @@ import RecentTenantsList from './RecentTenantsList';
 import TenantsTable from './TenantsTable';
 import PlansGrid from './PlansGrid';
 import StatusBadge from '../ui/StatusBadge';
+import SuperAdminOverviewSkeleton from '../skeletons/SuperAdminOverviewSkeleton';
+import TenantsTableSkeleton from '../skeletons/TenantsTableSkeleton';
+import PlansGridSkeleton from '../skeletons/PlansGridSkeleton';
 
 interface SharedProps {
   metrics: ApiGlobalOverview | null;
@@ -32,7 +35,11 @@ export interface SuperAdminOverviewTabProps {
 }
 
 export function SuperAdminOverviewTab({ metrics, tenants, loading }: SuperAdminOverviewTabProps) {
-  if (loading || !metrics) {
+  if (loading) {
+    return <SuperAdminOverviewSkeleton />;
+  }
+
+  if (!metrics) {
     return null;
   }
 
@@ -44,7 +51,7 @@ export function SuperAdminOverviewTab({ metrics, tenants, loading }: SuperAdminO
   );
 }
 
-export interface SuperAdminTenantsTabProps extends Omit<SharedProps, 'metrics' | 'loading'> {}
+export interface SuperAdminTenantsTabProps extends Omit<SharedProps, 'metrics'> {}
 
 export function SuperAdminTenantsTab({
   tenants,
@@ -57,7 +64,12 @@ export function SuperAdminTenantsTab({
   deletingTenant,
   selectedTenant,
   onSelectTenant,
+  loading,
 }: SuperAdminTenantsTabProps) {
+  if (loading) {
+    return <TenantsTableSkeleton />;
+  }
+
   return (
     <div className="space-y-4">
       <div className="panel-light flex flex-col gap-4 px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
@@ -92,8 +104,13 @@ export interface SuperAdminPlansTabProps {
 }
 
 export function SuperAdminPlansTab({ metrics, loading }: SuperAdminPlansTabProps) {
-  if (loading || !metrics) {
+  if (loading) {
+    return <PlansGridSkeleton />;
+  }
+
+  if (!metrics) {
     return null;
   }
+
   return <PlansGrid metrics={metrics} />;
 }

@@ -134,7 +134,6 @@ export default function TenantAdminDashboard() {
           />
 
           <main className="space-y-6">
-            {dashboard.loading && <p className="text-[#a1a1aa]">Cargando...</p>}
             {dashboard.error && (
               <div className="rounded-3xl border border-rose-400/20 bg-rose-400/10 px-4 py-3 text-sm text-rose-200">
                 {dashboard.error}
