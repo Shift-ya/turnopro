@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ChangeEvent, type MouseEvent } from 'react';
-import { X } from 'lucide-react';
+import { X, ArrowLeft } from 'lucide-react';
 import StatusBadge from '../ui/StatusBadge';
 import type { ApiAppointment } from '../../lib/api';
 
@@ -207,6 +207,15 @@ export default function CalendarAppointmentsPanel({ appointments, getServiceName
 
                 {/* Header */}
                 <div className="flex items-center justify-between border-b border-white/10 px-6 py-4">
+                <button
+                        onClick={() => {
+                          setMobileFilterField(null);
+                          setMobileFilterDraft('');
+                        }}
+                        className="text-stone-400 transition hover:text-white flex items-center "
+                      >
+                        <ArrowLeft size={20} />
+                      </button>
                   <h3 className="text-sm font-semibold text-white">
                     {mobileFilterField ? mobileFilterOptions.find((option) => option.key === mobileFilterField)?.label : 'Agregar filtro'}
                   </h3>
@@ -239,16 +248,6 @@ export default function CalendarAppointmentsPanel({ appointments, getServiceName
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      <button
-                        onClick={() => {
-                          setMobileFilterField(null);
-                          setMobileFilterDraft('');
-                        }}
-                        className="mb-3 text-xs text-stone-400 transition hover:text-white"
-                      >
-                        ← Volver
-                      </button>
-
                       {mobileFilterField === 'clientName' || mobileFilterField === 'date' ? (
                         <div className="space-y-3">
                           <input
