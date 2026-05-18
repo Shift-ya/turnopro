@@ -203,7 +203,7 @@ export default function CalendarAppointmentsPanel({ appointments, getServiceName
 
             {/* Slide-up panel - fixed to bottom, full width */}
             <div className="fixed inset-x-0 bottom-0 z-50 max-h-[85vh] w-full transform transition-transform duration-300 ease-out">
-              <div className="flex h-full flex-col rounded-t-3xl border-t border-white/10 bg-[#090d18]/95 backdrop-blur-xl w-full z-20">
+              <div className="flex h-full flex-col rounded-t-3xl border-t border-white/10 bg-[#090d18]/95 backdrop-blur-xl">
 
                 {/* Header */}
                 <div className="flex items-center justify-between border-b border-white/10 px-6 py-4">
