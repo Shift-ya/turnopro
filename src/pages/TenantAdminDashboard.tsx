@@ -103,71 +103,72 @@ export default function TenantAdminDashboard() {
   }
 
   return (
-    <div className="app-shell min-h-screen px-4 py-5 pb-32 sm:px-6 lg:px-8">
-      <div className="mx-auto flex min-h-[calc(100vh-2.5rem)] max-w-7xl gap-6">
-        <div className="hidden lg:block">
-          <TenantAdminSidebar
-            tenantName={dashboard.tenant?.name || 'Tenant'}
-            navItems={navItems}
-            activeTab={activeTab}
-            sidebarOpen={dashboard.sidebarOpen}
-            onClose={() => dashboard.setSidebarOpen(false)}
-            onSelectTab={setActiveTab}
-            onOpenPublicBooking={() => {
-              if (!dashboard.tenant?.slug) return;
-              navigate(`/booking/${dashboard.tenant.slug}`);
-            }}
-            onLogout={handleLogout}
-          />
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <DashboardHeader<TenantAdminTab>
-            activeTab={activeTab}
-            navItems={navItems}
-            title="Panel operativo"
-            eyebrow="Panel operativo"
-            onOpenSidebar={() => dashboard.setSidebarOpen(true)}
-            onSelectTab={setActiveTab}
-            showSidebarToggle={false}
-            actions={[{ key: 'bell', node: <Bell size={18} />, ariaLabel: 'Notificaciones' }]}
-          />
-
-          <main className="space-y-6">
-            {dashboard.error && (
-              <div className="rounded-3xl border border-rose-400/20 bg-rose-400/10 px-4 py-3 text-sm text-rose-200">
-                {dashboard.error}
-              </div>
-            )}
-
-            <Outlet
-              context={{
-                loading: dashboard.loading,
-                error: dashboard.error,
-                tenant: dashboard.tenant,
-                metrics: dashboard.metrics,
-                appointments: dashboard.appointments,
-                todayAppts: dashboard.todayAppts,
-                professionals: dashboard.professionals,
-                services: dashboard.services,
-                savingProfessional: dashboard.savingProfessional,
-                savingService: dashboard.savingService,
-                savingTenant: dashboard.savingTenant,
-                addProfessional: dashboard.addProfessional,
-                editProfessional: dashboard.editProfessional,
-                toggleProfessional: dashboard.toggleProfessional,
-                addService: dashboard.addService,
-                editService: dashboard.editService,
-                removeService: dashboard.removeService,
-                editTenant: dashboard.editTenant,
-                getServiceName: dashboard.getServiceName,
-                getProfName: dashboard.getProfName,
+    <>
+      <div className="app-shell min-h-screen py-5 pb-32">
+        <div className="mx-auto flex min-h-[calc(100vh-2.5rem)] max-w-7xl gap-6">
+          <div className="hidden lg:block">
+            <TenantAdminSidebar
+              tenantName={dashboard.tenant?.name || 'Tenant'}
+              navItems={navItems}
+              activeTab={activeTab}
+              sidebarOpen={dashboard.sidebarOpen}
+              onClose={() => dashboard.setSidebarOpen(false)}
+              onSelectTab={setActiveTab}
+              onOpenPublicBooking={() => {
+                if (!dashboard.tenant?.slug) return;
+                navigate(`/booking/${dashboard.tenant.slug}`);
               }}
+              onLogout={handleLogout}
             />
-          </main>
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <DashboardHeader<TenantAdminTab>
+              activeTab={activeTab}
+              navItems={navItems}
+              title="Panel operativo"
+              eyebrow="Panel operativo"
+              onOpenSidebar={() => dashboard.setSidebarOpen(true)}
+              onSelectTab={setActiveTab}
+              showSidebarToggle={false}
+              actions={[{ key: 'bell', node: <Bell size={18} />, ariaLabel: 'Notificaciones' }]}
+            />
+
+            <main className="space-y-6">
+              {dashboard.error && (
+                <div className="rounded-3xl border border-rose-400/20 bg-rose-400/10 px-4 py-3 text-sm text-rose-200">
+                  {dashboard.error}
+                </div>
+              )}
+
+              <Outlet
+                context={{
+                  loading: dashboard.loading,
+                  error: dashboard.error,
+                  tenant: dashboard.tenant,
+                  metrics: dashboard.metrics,
+                  appointments: dashboard.appointments,
+                  todayAppts: dashboard.todayAppts,
+                  professionals: dashboard.professionals,
+                  services: dashboard.services,
+                  savingProfessional: dashboard.savingProfessional,
+                  savingService: dashboard.savingService,
+                  savingTenant: dashboard.savingTenant,
+                  addProfessional: dashboard.addProfessional,
+                  editProfessional: dashboard.editProfessional,
+                  toggleProfessional: dashboard.toggleProfessional,
+                  addService: dashboard.addService,
+                  editService: dashboard.editService,
+                  removeService: dashboard.removeService,
+                  editTenant: dashboard.editTenant,
+                  getServiceName: dashboard.getServiceName,
+                  getProfName: dashboard.getProfName,
+                }}
+              />
+            </main>
+          </div>
         </div>
       </div>
-
       <InteractiveMenu
         className="lg:hidden"
         items={mobileMenuItems}
@@ -191,6 +192,6 @@ export default function TenantAdminDashboard() {
         }}
         ariaLabel="Navegación del panel"
       />
-    </div>
+    </>
   );
 }

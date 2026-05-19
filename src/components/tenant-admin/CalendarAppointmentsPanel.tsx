@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ChangeEvent, type MouseEvent } from 'react';
+import { createPortal } from 'react-dom';
 import { X, ArrowLeft } from 'lucide-react';
 import StatusBadge from '../ui/StatusBadge';
 import type { ApiAppointment } from '../../lib/api';
@@ -192,30 +193,30 @@ export default function CalendarAppointmentsPanel({ appointments, getServiceName
         </div>
 
         {/* Slide-up filter panel for mobile */}
-        {mobileFilterOpen && (
+        {mobileFilterOpen && createPortal(
           <>
             {/* Backdrop */}
             <div
-              className="fixed inset-0 z-40 bg-black/50 transition-opacity"
+              className="fixed inset-0 z-[100] bg-black/50 transition-opacity"
               onClick={() => setMobileFilterOpen(false)}
               aria-hidden="true"
             />
 
             {/* Slide-up panel - fixed to bottom, full width */}
-            <div className="fixed inset-x-0 bottom-0 z-50 max-h-[85vh] w-full transform transition-transform duration-300 ease-out">
+            <div className="fixed inset-x-0 bottom-0 z-[101] max-h-[85vh] w-full transform transition-transform duration-300 ease-out">
               <div className="flex h-full flex-col rounded-t-3xl border-t border-white/10 bg-[#090d18]/95 backdrop-blur-xl">
 
                 {/* Header */}
                 <div className="flex items-center justify-between border-b border-white/10 px-6 py-4">
-                <button
-                        onClick={() => {
-                          setMobileFilterField(null);
-                          setMobileFilterDraft('');
-                        }}
-                        className="text-stone-400 transition hover:text-white flex items-center "
-                      >
-                        <ArrowLeft size={20} />
-                      </button>
+                  <button
+                    onClick={() => {
+                      setMobileFilterField(null);
+                      setMobileFilterDraft('');
+                    }}
+                    className="text-stone-400 transition hover:text-white flex items-center "
+                  >
+                    <ArrowLeft size={20} />
+                  </button>
                   <h3 className="text-sm font-semibold text-white">
                     {mobileFilterField ? mobileFilterOptions.find((option) => option.key === mobileFilterField)?.label : 'Agregar filtro'}
                   </h3>
@@ -332,7 +333,8 @@ export default function CalendarAppointmentsPanel({ appointments, getServiceName
                 <div className="h-6" />
               </div>
             </div>
-          </>
+          </>,
+          document.body
         )}
       </div>
 
